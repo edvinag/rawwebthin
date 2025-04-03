@@ -24,6 +24,13 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
+        var boatIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3253/3253113.png', // Using the requested arrow icon
+            iconSize: [30, 30], // size of the icon
+            iconAnchor: [15, 15], // point of the icon which will correspond to marker's location
+            popupAnchor: [0, -15] // point from which the popup should open relative to the iconAnchor
+        });
+
         async function fetchBoatData() {
             const response = await fetch('https://raw-bridge-server.onrender.com/sim/all');
             const data = await response.json();
@@ -31,8 +38,8 @@
         }
 
         async function initializeMap() {
-            // Initialize the map centered on Gothenburg
-            var map = L.map('map').setView([57.7089, 11.9746], 13);
+            // Initialize the map
+            var map = L.map('map');
 
             // Add the Eniro nautical tile layer
             L.tileLayer('https://{s}.eniro.no/geowebcache/service/tms1.0.0/nautical2x/{z}/{x}/{y}.png?c=crc&v=20200602', {
@@ -51,15 +58,16 @@
 
             async function updateBoatPosition() {
                 const boatData = await fetchBoatData();
-                const { latitude, longitude } = boatData.data.gps.location;
+                const { latitude, longitude, course } = boatData.data.gps.location;
 
                 if (boatMarker) {
                     // Move the marker to the new position
                     boatMarker.setLatLng([latitude, longitude]);
                 } else {
                     // Create a new marker if it doesn't exist
-                    boatMarker = L.marker([latitude, longitude]).addTo(map);
+                    boatMarker = L.marker([latitude, longitude], { icon: boatIcon }).addTo(map);
                     boatMarker.bindPopup(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
+                    map.setView([latitude, longitude], 13); // Move map to boat's location at startup
                 }
 
                 // Update marker popup content
