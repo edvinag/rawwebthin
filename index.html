@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaflet Map Website</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        html, body {
+        html,
+        body {
             height: 100%;
             margin: 0;
         }
+
         #map {
             position: absolute;
             top: 0;
@@ -19,17 +22,24 @@
         }
     </style>
 </head>
+
 <body>
     <div id="map"></div>
 
+    <!-- Leaflet Library -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Marker.Rotate.js Plugin -->
+    <script src="https://rawcdn.githack.com/shramov/leaflet-plugins/master/layer/Marker.Rotate.js"></script>
+
     <script>
         var boatIcon = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3253/3253113.png', // Using the requested arrow icon
-            iconSize: [30, 30], // size of the icon
-            iconAnchor: [15, 15], // point of the icon which will correspond to marker's location
-            popupAnchor: [0, -15] // point from which the popup should open relative to the iconAnchor
+            iconUrl: 'assets/boat.png', // Make sure this path is correct
+            iconSize: new L.Point(19, 26),     // Using L.Point instead of array
+            iconAnchor: new L.Point(9, 13),    // Using L.Point instead of array
+            popupAnchor: [0, -15]              // This remains an array
         });
+
+
 
         async function fetchBoatData() {
             const response = await fetch('https://raw-bridge-server.onrender.com/sim/all');
@@ -38,10 +48,8 @@
         }
 
         async function initializeMap() {
-            // Initialize the map
             var map = L.map('map');
 
-            // Add the Eniro nautical tile layer
             L.tileLayer('https://{s}.eniro.no/geowebcache/service/tms1.0.0/nautical2x/{z}/{x}/{y}.png?c=crc&v=20200602', {
                 maxZoom: 17,
                 minZoom: 3,
@@ -53,35 +61,32 @@
                 subdomains: ['map01', 'map02', 'map03', 'map04']
             }).addTo(map);
 
-            // Marker for the boat
             var boatMarker = null;
 
             async function updateBoatPosition() {
                 const boatData = await fetchBoatData();
-                const { latitude, longitude, course } = boatData.data.gps.location;
+                const { latitude, longitude } = boatData.data.gps.location;
+                const course = boatData.data.gps.course;
 
                 if (boatMarker) {
-                    // Move the marker to the new position
                     boatMarker.setLatLng([latitude, longitude]);
+                    boatMarker.setIconAngle(course);  // ✅ Rotate the marker using setIconAngle()
                 } else {
-                    // Create a new marker if it doesn't exist
                     boatMarker = L.marker([latitude, longitude], { icon: boatIcon }).addTo(map);
-                    boatMarker.bindPopup(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
-                    map.setView([latitude, longitude], 13); // Move map to boat's location at startup
+                    boatMarker.bindPopup(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude} <br>Course: ${course}`);
+                    map.setView([latitude, longitude], 13);
                 }
 
-                // Update marker popup content
                 boatMarker.getPopup().setContent(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
             }
 
-            // Initial fetch and setting marker position
             await updateBoatPosition();
 
-            // Update boat position every 500 ms
             setInterval(updateBoatPosition, 500);
         }
 
         initializeMap();
     </script>
 </body>
+
 </html>
