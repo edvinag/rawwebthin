@@ -1,5 +1,3 @@
-// route.js - Handles route fetching and rendering
-
 var routePolyline = null;
 var routeMarkers = []; // Store the route circle markers
 const routeColor = '#214F5D'; // Your desired color for all route elements
@@ -32,10 +30,15 @@ async function drawRoute(map) {
         coordinates.forEach((point, index) => {
             const circleMarker = L.marker(point, {
                 icon: circleIcon, // Use the circle icon
-                draggable: false, // Make it non-draggable
+                draggable: true, // Make it draggable
             }).addTo(map);
 
             circleMarker.bindPopup(`<b>Route Point ${index + 1}</b><br>Latitude: ${point[0]}<br>Longitude: ${point[1]}`);
+            
+            // Listen for drag events and update the polyline when dragged
+            circleMarker.on('drag', updateRoutePolyline);
+            circleMarker.on('dragend', updateRoutePolyline); // Ensures polyline updates after drag ends
+            
             routeMarkers.push(circleMarker);
         });
 
@@ -46,5 +49,14 @@ async function drawRoute(map) {
         } else {
             routePolyline = L.polyline(coordinates, { color: routeColor, weight: 5, opacity: 0.8 }).addTo(map);
         }
+    }
+}
+
+// Update the polyline when markers are dragged
+function updateRoutePolyline() {
+    const newCoordinates = routeMarkers.map(marker => marker.getLatLng());
+
+    if (routePolyline) {
+        routePolyline.setLatLngs(newCoordinates);
     }
 }
