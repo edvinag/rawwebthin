@@ -1,34 +1,8 @@
-var boatIcon = L.icon({
-    iconUrl: 'assets/boat.png', // Adjusted path
-    iconSize: new L.Point(19, 26),
-    iconAnchor: new L.Point(9, 13),
-    popupAnchor: [0, -15]
-});
+// map.js - Core Map Functionality
 
-var boatPath = [];  // Store the boat's path coordinates
-var pathPolyline = null;  // Reference to the drawn polyline
-
-// Helper function to get URL parameters
-function getUrlParameter(name) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(name);
-}
-
-// Get the URL from query parameter or localStorage
-const storedUrl = localStorage.getItem('boatDataUrl') || '';
-const urlParam = getUrlParameter('url');
-
-if (urlParam) {
-    localStorage.setItem('boatDataUrl', urlParam);  // Store the URL in localStorage
-}
-
-const apiUrl = urlParam || storedUrl;  // Use the URL parameter if available, otherwise fallback to localStorage
-
-async function fetchBoatData() {
-    const response = await fetch(apiUrl.replace(/\/$/, '') + '/all');
-    const data = await response.json();
-    return data;
-}
+var boatPath = [];
+var pathPolyline = null;
+var routePolyline = null;
 
 async function initializeMap() {
     var map = L.map('map');
@@ -51,14 +25,12 @@ async function initializeMap() {
         const { latitude, longitude } = boatData.data.gps.location;
         const course = boatData.data.gps.course;
 
-        // Add current position to boatPath array
         boatPath.push([latitude, longitude]);
 
-        // Draw or update the path polyline
         if (pathPolyline) {
-            pathPolyline.setLatLngs(boatPath);  // Update the polyline with the new path
+            pathPolyline.setLatLngs(boatPath);
         } else {
-            pathPolyline = L.polyline(boatPath, { color: 'green', weight: 3, opacity: 0.8}).addTo(map);
+            pathPolyline = L.polyline(boatPath, { color: 'green', weight: 3, opacity: 0.8 }).addTo(map);
         }
 
         if (boatMarker) {
@@ -74,6 +46,21 @@ async function initializeMap() {
         boatMarker.getPopup().setContent(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
     }
 
+    async function drawRoute() {
+        const routeData = await fetchRouteData();
+
+        if (routeData.geometry.type === "LineString") {
+            const coordinates = routeData.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+            if (routePolyline) {
+                routePolyline.setLatLngs(coordinates);
+            } else {
+                routePolyline = L.polyline(coordinates, { color: 'blue', weight: 4, opacity: 0.7 }).addTo(map);
+            }
+        }
+    }
+
+    await drawRoute();
     await updateBoatPosition();
 
     setInterval(updateBoatPosition, 500);
