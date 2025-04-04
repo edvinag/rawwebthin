@@ -8,8 +8,24 @@ var boatIcon = L.icon({
 var boatPath = [];  // Store the boat's path coordinates
 var pathPolyline = null;  // Reference to the drawn polyline
 
+// Helper function to get URL parameters
+function getUrlParameter(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name);
+}
+
+// Get the URL from query parameter or localStorage
+const storedUrl = localStorage.getItem('boatDataUrl') || '';
+const urlParam = getUrlParameter('url');
+
+if (urlParam) {
+    localStorage.setItem('boatDataUrl', urlParam);  // Store the URL in localStorage
+}
+
+const apiUrl = urlParam || storedUrl;  // Use the URL parameter if available, otherwise fallback to localStorage
+
 async function fetchBoatData() {
-    const response = await fetch('https://raw-bridge-server.onrender.com/sim/all');
+    const response = await fetch(apiUrl.replace(/\/$/, '') + '/all');
     const data = await response.json();
     return data;
 }
@@ -50,8 +66,9 @@ async function initializeMap() {
             boatMarker.setIconAngle(course);
         } else {
             boatMarker = L.marker([latitude, longitude], { icon: boatIcon }).addTo(map);
+            boatMarker.setIconAngle(course);
             boatMarker.bindPopup(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude} <br>Course: ${course}`);
-            map.setView([latitude, longitude], 13);
+            map.setView([latitude, longitude], 16);
         }
 
         boatMarker.getPopup().setContent(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
