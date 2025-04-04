@@ -12,6 +12,12 @@ async function fetchRouteData() {
     return data;
 }
 
+async function updateRouteIndex(index) {
+    const data = await fetch(apiUrl.replace(/\/$/, '') + `/route?goalIndex=${index}`);
+    const routeData = await data.json();
+    return routeData;
+}
+
 async function pushRouteData(data, keepIndex, goalIndex = null) {
     if (!apiUrl) return; // Ensure apiUrl is defined
 
