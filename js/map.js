@@ -2,7 +2,6 @@
 
 var boatPath = [];
 var pathPolyline = null;
-var routePolyline = null;
 
 async function initializeMap() {
     var map = L.map('map');
@@ -46,21 +45,7 @@ async function initializeMap() {
         boatMarker.getPopup().setContent(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
     }
 
-    async function drawRoute() {
-        const routeData = await fetchRouteData();
-
-        if (routeData.geometry.type === "LineString") {
-            const coordinates = routeData.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-
-            if (routePolyline) {
-                routePolyline.setLatLngs(coordinates);
-            } else {
-                routePolyline = L.polyline(coordinates, { color: 'blue', weight: 4, opacity: 0.7 }).addTo(map);
-            }
-        }
-    }
-
-    await drawRoute();
+    await drawRoute(map); // Call the drawRoute function from route.js
     await updateBoatPosition();
 
     setInterval(updateBoatPosition, 500);
