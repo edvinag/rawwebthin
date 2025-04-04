@@ -15,7 +15,31 @@ async function fetchRouteData() {
     return data;
 }
 
-// Render the route on the map with circle markers
+// Push updated route data to the server
+async function pushRouteData(data, keepIndex, goalIndex = null) {
+    if (!apiUrl) return;
+
+    let url = apiUrl.replace(/\/$/, '') + `/route?keepIndex=${keepIndex}`;
+    if (goalIndex !== null) url += `&goalIndex=${goalIndex}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            console.error(`Error pushing data to server: ${response.statusText}`);
+        } else {
+            console.log("Route data successfully pushed to server.");
+        }
+    } catch (error) {
+        console.error("Error pushing data to server:", error);
+    }
+}
+
+// Render the route on the map with draggable markers
 async function drawRoute(map) {
     const routeData = await fetchRouteData();
 
@@ -29,15 +53,17 @@ async function drawRoute(map) {
         // Create a circle marker for each point in the route
         coordinates.forEach((point, index) => {
             const circleMarker = L.marker(point, {
-                icon: circleIcon, // Use the circle icon
-                draggable: true, // Make it draggable
+                icon: circleIcon,
+                draggable: true,
             }).addTo(map);
 
             circleMarker.bindPopup(`<b>Route Point ${index + 1}</b><br>Latitude: ${point[0]}<br>Longitude: ${point[1]}`);
             
-            // Listen for drag events and update the polyline when dragged
+            // Update the polyline visually during dragging
             circleMarker.on('drag', updateRoutePolyline);
-            circleMarker.on('dragend', updateRoutePolyline); // Ensures polyline updates after drag ends
+
+            // Push data to the server only when dragging ends
+            circleMarker.on('dragend', pushRouteOnDragEnd);
             
             routeMarkers.push(circleMarker);
         });
@@ -45,18 +71,33 @@ async function drawRoute(map) {
         // Draw or update the route polyline
         if (routePolyline) {
             routePolyline.setLatLngs(coordinates);
-            routePolyline.setStyle({ color: routeColor }); // Update polyline color
+            routePolyline.setStyle({ color: routeColor });
         } else {
             routePolyline = L.polyline(coordinates, { color: routeColor, weight: 5, opacity: 0.8 }).addTo(map);
         }
     }
 }
 
-// Update the polyline when markers are dragged
+// Update the polyline visually when markers are dragged
 function updateRoutePolyline() {
     const newCoordinates = routeMarkers.map(marker => marker.getLatLng());
 
     if (routePolyline) {
         routePolyline.setLatLngs(newCoordinates);
     }
+}
+
+// Push updated data to the server when dragging ends
+function pushRouteOnDragEnd() {
+    const newCoordinates = routeMarkers.map(marker => marker.getLatLng());
+
+    const data = {
+        geometry: {
+            type: "LineString",
+            coordinates: newCoordinates.map(latLng => [latLng.lng, latLng.lat])
+        }
+    };
+
+    // Adjust keepIndex and goalIndex as needed
+    pushRouteData(data, true);
 }
