@@ -4,6 +4,12 @@ var routePolyline = null;
 var routeMarkers = []; // Store the route circle markers
 const routeColor = '#214F5D'; // Your desired color for all route elements
 
+var circleIcon = new L.Icon({
+    iconUrl: 'assets/route-marker.png',
+    shadowUrl: null,
+    iconSize: new L.Point(15, 15)
+});
+
 // Fetch route data from the server
 async function fetchRouteData() {
     const response = await fetch(apiUrl.replace(/\/$/, '') + '/route');
@@ -21,14 +27,12 @@ async function drawRoute(map) {
         // Clear previous markers
         routeMarkers.forEach(marker => map.removeLayer(marker));
         routeMarkers = [];
-
+        
         // Create a circle marker for each point in the route
         coordinates.forEach((point, index) => {
-            const circleMarker = L.circleMarker(point, {
-                radius: 5,                 // Size of the circle
-                color: routeColor,         // Border color
-                fillColor: routeColor,     // Fill color
-                fillOpacity: 0.8           // Transparency of the fill
+            const circleMarker = L.marker(point, {
+                icon: circleIcon, // Use the circle icon
+                draggable: false, // Make it non-draggable
             }).addTo(map);
 
             circleMarker.bindPopup(`<b>Route Point ${index + 1}</b><br>Latitude: ${point[0]}<br>Longitude: ${point[1]}`);
