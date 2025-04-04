@@ -15,7 +15,71 @@ async function fetchRouteData() {
     return data;
 }
 
-// Push updated route data to the server
+// Render the route on the map with draggable markers
+async function drawRoute(map) {
+    const routeData = await fetchRouteData();
+
+    if (routeData.geometry.type === "LineString") {
+        const coordinates = routeData.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+        // Clear previous markers
+        routeMarkers.forEach(marker => map.removeLayer(marker));
+        routeMarkers = [];
+        
+        // Create a circle marker for each point in the route
+        coordinates.forEach((point, index) => {
+            const circleMarker = L.marker(point, {
+                icon: circleIcon,
+                draggable: true,
+            }).addTo(map);
+
+            circleMarker.bindPopup(`<b>Route Point ${index + 1}</b><br>Latitude: ${point[0]}<br>Longitude: ${point[1]}`);
+            
+            // Use the index for efficient visual update during dragging
+            circleMarker.on('drag', (e) => updateRoutePolyline(index, e.target.getLatLng()));
+
+            // Push the entire route to the server when dragging ends (no index)
+            circleMarker.on('dragend', pushRouteOnDragEnd);
+            
+            routeMarkers.push(circleMarker);
+        });
+
+        // Draw or update the route polyline
+        if (routePolyline) {
+            routePolyline.setLatLngs(coordinates);
+            routePolyline.setStyle({ color: routeColor });
+        } else {
+            routePolyline = L.polyline(coordinates, { color: routeColor, weight: 5, opacity: 0.8 }).addTo(map);
+        }
+    }
+}
+
+// ✅ Update the polyline visually when a specific marker is dragged (uses index)
+function updateRoutePolyline(index, latLng) {
+    if (routePolyline) {
+        const latLngs = routePolyline.getLatLngs(); // Get the current polyline points
+        latLngs[index] = latLng; // Update only the specific point
+
+        routePolyline.setLatLngs(latLngs); // Efficiently update the polyline
+    }
+}
+
+// ❌ Push the entire route to the server when dragging ends (no index)
+function pushRouteOnDragEnd() {
+    const newCoordinates = routeMarkers.map(marker => marker.getLatLng());
+
+    const data = {
+        geometry: {
+            type: "LineString",
+            coordinates: newCoordinates.map(latLng => [latLng.lng, latLng.lat])
+        }
+    };
+
+    // Call the original pushRouteData function
+    pushRouteData(data, true);
+}
+
+// Your original pushRouteData function (unchanged)
 async function pushRouteData(data, keepIndex, goalIndex = null) {
     if (!apiUrl) return;
 
@@ -37,67 +101,4 @@ async function pushRouteData(data, keepIndex, goalIndex = null) {
     } catch (error) {
         console.error("Error pushing data to server:", error);
     }
-}
-
-// Render the route on the map with draggable markers
-async function drawRoute(map) {
-    const routeData = await fetchRouteData();
-
-    if (routeData.geometry.type === "LineString") {
-        const coordinates = routeData.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-
-        // Clear previous markers
-        routeMarkers.forEach(marker => map.removeLayer(marker));
-        routeMarkers = [];
-        
-        // Create a circle marker for each point in the route
-        coordinates.forEach((point, index) => {
-            const circleMarker = L.marker(point, {
-                icon: circleIcon,
-                draggable: true,
-            }).addTo(map);
-
-            circleMarker.bindPopup(`<b>Route Point ${index + 1}</b><br>Latitude: ${point[0]}<br>Longitude: ${point[1]}`);
-            
-            // Update the polyline visually during dragging
-            circleMarker.on('drag', updateRoutePolyline);
-
-            // Push data to the server only when dragging ends
-            circleMarker.on('dragend', pushRouteOnDragEnd);
-            
-            routeMarkers.push(circleMarker);
-        });
-
-        // Draw or update the route polyline
-        if (routePolyline) {
-            routePolyline.setLatLngs(coordinates);
-            routePolyline.setStyle({ color: routeColor });
-        } else {
-            routePolyline = L.polyline(coordinates, { color: routeColor, weight: 5, opacity: 0.8 }).addTo(map);
-        }
-    }
-}
-
-// Update the polyline visually when markers are dragged
-function updateRoutePolyline() {
-    const newCoordinates = routeMarkers.map(marker => marker.getLatLng());
-
-    if (routePolyline) {
-        routePolyline.setLatLngs(newCoordinates);
-    }
-}
-
-// Push updated data to the server when dragging ends
-function pushRouteOnDragEnd() {
-    const newCoordinates = routeMarkers.map(marker => marker.getLatLng());
-
-    const data = {
-        geometry: {
-            type: "LineString",
-            coordinates: newCoordinates.map(latLng => [latLng.lng, latLng.lat])
-        }
-    };
-
-    // Adjust keepIndex and goalIndex as needed
-    pushRouteData(data, true);
 }
