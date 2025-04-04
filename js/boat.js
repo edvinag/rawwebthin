@@ -13,6 +13,8 @@ async function initializeBoat(map) {
         const course = boatData.data.gps.course;
         const reflocation = boatData.settings.controller.reflocation;
 
+        updateGoalMarker(boatData.settings.route.goalIndex);
+
         boatPath.push([latitude, longitude]);
 
         if (pathPolyline) {

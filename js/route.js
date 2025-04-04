@@ -1,5 +1,6 @@
 var routePolyline = null;
 var routeMarkers = []; // Store the route circle markers
+var goalMarker = null; // Store the goal marker
 const routeColor = '#214F5D'; // Your desired color for all route elements
 
 var circleIcon = new L.Icon({
@@ -57,6 +58,14 @@ function updateRoutePolyline(index, latLng) {
         latLngs[index] = latLng; // Update only the specific point
 
         routePolyline.setLatLngs(latLngs); // Efficiently update the polyline
+    }
+}
+
+function updateGoalMarker(index) {
+    if (goalMarker) {
+        goalMarker.setLatLng(routeMarkers[index].getLatLng());
+    } else {
+        goalMarker = L.circleMarker(routeMarkers[index].getLatLng()).addTo(map);
     }
 }
 
