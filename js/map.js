@@ -1,8 +1,5 @@
 // map.js - Core Map Functionality
 
-var boatPath = [];
-var pathPolyline = null;
-
 async function initializeMap() {
     var map = L.map('map');
 
@@ -17,38 +14,8 @@ async function initializeMap() {
         subdomains: ['map01', 'map02', 'map03', 'map04']
     }).addTo(map);
 
-    var boatMarker = null;
-
-    async function updateBoatPosition() {
-        const boatData = await fetchBoatData();
-        const { latitude, longitude } = boatData.data.gps.location;
-        const course = boatData.data.gps.course;
-
-        boatPath.push([latitude, longitude]);
-
-        if (pathPolyline) {
-            pathPolyline.setLatLngs(boatPath);
-        } else {
-            pathPolyline = L.polyline(boatPath, { color: 'green', weight: 3, opacity: 0.8 }).addTo(map);
-        }
-
-        if (boatMarker) {
-            boatMarker.setLatLng([latitude, longitude]);
-            boatMarker.setIconAngle(course);
-        } else {
-            boatMarker = L.marker([latitude, longitude], { icon: boatIcon }).addTo(map);
-            boatMarker.setIconAngle(course);
-            boatMarker.bindPopup(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude} <br>Course: ${course}`);
-            map.setView([latitude, longitude], 16);
-        }
-
-        boatMarker.getPopup().setContent(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
-    }
-
     await drawRoute(map); // Call the drawRoute function from route.js
-    await updateBoatPosition();
-
-    setInterval(updateBoatPosition, 500);
+    await initializeBoat(map); // Initialize boat handling from boat.js
 }
 
 initializeMap();
