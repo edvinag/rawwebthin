@@ -61,7 +61,7 @@ function updateRoutePolyline(index, latLng) {
     }
 }
 
-function updateGoalMarker(index) {
+function updateGoalMarker(index, map) {
     if (goalMarker) {
         goalMarker.setLatLng(routeMarkers[index].getLatLng());
     } else {

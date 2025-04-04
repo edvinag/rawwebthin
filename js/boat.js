@@ -6,6 +6,12 @@ var boatMarker = null;
 var refLine = null;  // Polyline for the line between the boat and reflocation
 var refLocationMarker = null; // Marker for the end of the refLine
 
+var targetIcon = new L.Icon({
+    iconUrl: 'assets/target.png',
+    shadowUrl: null,
+    iconSize: new L.Point(30, 30)
+});
+
 async function initializeBoat(map) {
     async function updateBoatPosition() {
         const boatData = await fetchBoatData();
@@ -13,7 +19,7 @@ async function initializeBoat(map) {
         const course = boatData.data.gps.course;
         const reflocation = boatData.settings.controller.reflocation;
 
-        updateGoalMarker(boatData.settings.route.goalIndex);
+        updateGoalMarker(boatData.settings.route.goalIndex, map);
 
         boatPath.push([latitude, longitude]);
 
@@ -39,7 +45,7 @@ async function initializeBoat(map) {
             refLine.setLatLngs([[latitude, longitude], refLocationCoords]);
         } else {
             refLine = L.polyline([[latitude, longitude], refLocationCoords], {
-                color: 'green', weight: 4, opacity: 0.7, dashArray: '5, 5'
+                color: 'red', weight: 4, opacity: 0.5, dashArray: '5, 5'
             }).addTo(map);
         }
 
@@ -47,11 +53,8 @@ async function initializeBoat(map) {
         if (refLocationMarker) {
             refLocationMarker.setLatLng(refLocationCoords);
         } else {
-            refLocationMarker = L.circleMarker(refLocationCoords, {
-                color: 'black',
-                fillColor: 'black',
-                fillOpacity: 0.8,
-                radius: 4
+            refLocationMarker = L.marker(refLocationCoords, {
+                icon: targetIcon
             }).addTo(map);
         }
 
