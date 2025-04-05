@@ -5,6 +5,7 @@ var pathPolyline = null;
 var boatMarker = null;
 var refLine = null;  // Polyline for the line between the boat and reflocation
 var refLocationMarker = null; // Marker for the end of the refLine
+var darkMode = false; // Default dark mode state
 
 var targetIcon = new L.Icon({
     iconUrl: 'assets/target.png',
@@ -18,8 +19,10 @@ async function initializeBoat(map) {
         const { latitude, longitude } = boatData.data.gps.location;
         const course = boatData.data.gps.course;
         const reflocation = boatData.settings.controller.reflocation;
+        darkMode = boatData.settings.rudder.darkMode; // Update dark mode state
 
         updateGoalMarker(boatData.settings.route.goalIndex, map);
+        updateDarkModeControl();
 
         boatPath.push([latitude, longitude]);
 

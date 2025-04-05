@@ -39,3 +39,21 @@ async function pushRouteData(data, keepIndex, goalIndex = null) {
         console.error("Error pushing data to server:", error);
     }
 }
+
+async function toggleDarkMode(currentMode) {
+    if (!apiUrl) return;
+
+    const url = apiUrl.replace(/\/$/, '') + `/rudder?darkMode=${!currentMode}`;
+
+    try {
+        const response = await fetch(url, { method: 'GET' });
+        if (response.ok) {
+            const data = await response.json();
+            return data.darkMode; // Return the updated dark mode state
+        } else {
+            console.error(`Failed to toggle dark mode: ${response.statusText}`);
+        }
+    } catch (error) {
+        console.error("Error toggling dark mode:", error);
+    }
+}
