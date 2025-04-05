@@ -1,6 +1,8 @@
 // map.js - Core Map Functionality
 
 let darkModeControlContainer; // Declare a global variable for the control container
+let followBoatControlContainer; // Declare a global variable for the follow boat control container
+let followboat = false;
 
 async function initializeMap() {
     const map = L.map('map');
@@ -36,8 +38,31 @@ async function initializeMap() {
             return darkModeControlContainer;
         }
     });
-
     map.addControl(new DarkModeControl());
+
+    const followBoatControl = L.Control.extend({
+        options: { position: 'bottomright' },
+
+        onAdd: function (map) {
+            followBoatControlContainer = L.DomUtil.create('div', 'leaflet-control-followboat');
+            Object.assign(followBoatControlContainer.style, {
+                backgroundColor: 'transparent',
+                backgroundSize: "30px 30px",
+                width: '30px',
+                height: '30px',
+                cursor: 'pointer',
+                backgroundImage: "url(assets/followboat_off.png)"
+            });
+
+            followBoatControlContainer.addEventListener('click', () => {
+                followboat = !followboat;
+                followBoatControlContainer.style.backgroundImage = followboat ? "url(assets/followboat_on.png)" : "url(assets/followboat_off.png)";
+            });
+
+            return followBoatControlContainer;
+        }
+    });
+    map.addControl(new followBoatControl());
 
     await drawRoute(map);
     await initializeBoat(map);

@@ -23,7 +23,10 @@ async function initializeBoat(map) {
 
         updateGoalMarker(boatData.settings.route.goalIndex, map);
         updateDarkModeControl();
-
+        if (followboat) {
+            map.setView([latitude, longitude]);
+        }
+        
         boatPath.push([latitude, longitude]);
 
         if (pathPolyline) {
