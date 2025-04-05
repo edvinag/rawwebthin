@@ -35,6 +35,8 @@ async function initializeMap() {
 
             darkModeControlContainer.addEventListener('click', async (e) => {await toggleDarkMode(darkMode);});
 
+            darkModeControlContainer.title = "Dark Mode";
+
             return darkModeControlContainer;
         }
     });
@@ -58,6 +60,8 @@ async function initializeMap() {
                 followboat = !followboat;
                 followBoatControlContainer.style.backgroundImage = followboat ? "url(assets/followboat_on.png)" : "url(assets/followboat_off.png)";
             });
+
+            followBoatControlContainer.title = "Follow Boat";
 
             return followBoatControlContainer;
         }
