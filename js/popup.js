@@ -1,6 +1,6 @@
 // popup.js - Handles the Popup Display
 
-var autoRoute = false; // Default auto route state
+var autoRoute = true; // Default auto route state
 
 function createPopup(map) {
     map.on('dblclick', function (e) {
@@ -64,7 +64,7 @@ function createPopup(map) {
                     ">
                         <label style="font-size: 12px; margin-bottom: 5px;">Auto Route</label>
                         <label class="switch">
-                            <input type="checkbox" id="modeToggle">
+                            <input type="checkbox" id="modeToggle" checked="${autoRoute}">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -121,7 +121,7 @@ function createPopup(map) {
 
 
         document.getElementById('addButton').addEventListener('click', () => {
-            addPointToRoute(e.latlng, map);
+            addPointToRoute(e.latlng, map, autoRoute); // Pass autoRoute state
             map.closePopup();  // Close the popup
         });
 
@@ -138,8 +138,8 @@ function createPopup(map) {
 }
 
 function toggleMode(checkbox) {
-    const label = document.getElementById('toggleLabel');
     autoRoute = checkbox.checked; // Update the global variable
+    console.log('Auto route mode:', autoRoute); // Log the current state
 }
 
 function addPoint(latlng) {

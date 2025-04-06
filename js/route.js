@@ -55,11 +55,24 @@ function addMarker(latLng, index, map) {
     routeMarkers.push(circleMarker);
 }
 
-function addPointToRoute(latLng, map) {
-    addMarker(latLng, routeMarkers.length, map); // Use the current length as the index
+async function addPointToRoute(latLng, map, isAutoRoute = false) {
+    if (isAutoRoute) {
+        const newCoordinates = await fetchAutoRoute(routeMarkers[routeMarkers.length - 1].getLatLng(), latLng);
+        console.log(newCoordinates); // Log the new coordinates
+        if (newCoordinates) {
+            newCoordinates.geometry.coordinates.slice(1).forEach(coord => {
+                coord = [coord[1], coord[0]]; // Adjust the coordinate order
+                addMarker(coord, routeMarkers.length, map); // Use the current length as the index
+                routePolyline.addLatLng(coord);
+            });
+        }
+    }
+    else {
+        addMarker(latLng, routeMarkers.length, map); // Use the current length as the index
 
-    routePolyline.addLatLng(latLng); // Add the new point to the polyline
-    pushRouteData(routePolyline.toGeoJSON(), true); // Push the updated route to the server
+        routePolyline.addLatLng(latLng); // Add the new point to the polyline
+    }
+    pushRouteData(routePolyline.toGeoJSON(), true);
 }
 
 
