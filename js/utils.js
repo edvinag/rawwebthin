@@ -58,7 +58,7 @@ async function toggleDarkMode(currentMode) {
     }
 }
 
-const fetchAutoRoute = async (startLongitude, startLatitude, endLongitude, endLatitude) => {
+const fetchAutoRoute = async (start, end) => {  // start and end are objects with {longitude, latitude}
     if (!autoApiKey) {
       showError("Missing API key. Please check your settings.");
       return null;
@@ -66,7 +66,7 @@ const fetchAutoRoute = async (startLongitude, startLatitude, endLongitude, endLa
 
     const api_url = "https://nautical-hub.skippo.io/aws/autoroute";
     const auth_header = `Basic ${autoApiKey}`;
-    const course = `${startLongitude},${startLatitude};${endLongitude},${endLongitude}`;
+    const course = `${start.longitude},${start.latitude};${end.longitude},${end.latitude}`;
 
     const params = new URLSearchParams({
       usehydrographica: "true",
@@ -77,7 +77,7 @@ const fetchAutoRoute = async (startLongitude, startLatitude, endLongitude, endLa
     });
 
     try {
-      const response = await fetch(`${autoUrl}?${params.toString()}`, {
+      const response = await fetch(`${api_url}?${params.toString()}`, {
         method: 'GET',
         headers: { "Authorization": auth_header }
       });
