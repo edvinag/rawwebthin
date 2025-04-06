@@ -1,5 +1,7 @@
 // popup.js - Handles the Popup Display
 
+var aoutRoute = false; // Default auto route state
+
 function createPopup(map) {
     map.on('dblclick', function (e) {
         const popup = L.popup()
@@ -14,7 +16,7 @@ function createPopup(map) {
                     ">
                         <!-- Button 1: Pin Icon -->
                         <div style="display: flex; flex-direction: column; align-items: center;">
-                            <button style="
+                            <button id="pinButton" style="
                                 border: none;
                                 border-radius: 50%;
                                 width: 40px;
@@ -26,7 +28,7 @@ function createPopup(map) {
                                 align-items: center;
                                 justify-content: center;
                                 font-size: 18px;
-                            " onclick="alert('Pin Button clicked!')">
+                            ">
                                 <i class="fa fa-map-pin"></i>
                             </button>
                             <span style="margin-top: 5px; font-size: 12px; color: #007bff;">New</span>
@@ -34,7 +36,7 @@ function createPopup(map) {
 
                         <!-- Button 2: Plus Icon -->
                         <div style="display: flex; flex-direction: column; align-items: center;">
-                            <button style="
+                            <button id="addButton" style="
                                 border: none;
                                 border-radius: 50%;
                                 width: 40px;
@@ -46,7 +48,7 @@ function createPopup(map) {
                                 align-items: center;
                                 justify-content: center;
                                 font-size: 18px;
-                            " onclick="alert('Plus Button clicked!')">
+                            ">
                                 <i class="fa fa-plus"></i>
                             </button>
                             <span style="margin-top: 5px; font-size: 12px; color: #28a745;">Add</span>
@@ -60,9 +62,9 @@ function createPopup(map) {
                         flex-direction: column;
                         align-items: center;
                     ">
-                        <label style="font-size: 12px; margin-bottom: 5px;">Auto</label>
+                        <label style="font-size: 12px; margin-bottom: 5px;">Auto Route</label>
                         <label class="switch">
-                            <input type="checkbox" id="modeToggle" onchange="toggleMode(this)">
+                            <input type="checkbox" id="modeToggle">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -113,19 +115,30 @@ function createPopup(map) {
                             transform: translateX(26px);
                         }
                     </style>
-
-                    <script>
-                        function toggleMode(checkbox) {
-                            const label = document.getElementById('toggleLabel');
-                            if (checkbox.checked) {
-                                label.innerText = 'Auto';
-                            } else {
-                                label.innerText = 'Not Auto';
-                            }
-                        }
-                    </script>
                 </div>
             `)
             .openOn(map);
+
+        // Attach event listeners after rendering
+        document.getElementById('addButton').addEventListener('click', () => addPoint(e.latlng));
+        document.getElementById('pinButton').addEventListener('click', () => newRoute(e.latlng));
+
+        // Toggle switch event listener
+        document.getElementById('modeToggle').addEventListener('change', function() {
+            toggleMode(this);
+        });
     });
+}
+
+function toggleMode(checkbox) {
+    const label = document.getElementById('toggleLabel');
+    aoutRoute = checkbox.checked; // Update the global variable
+}
+
+function addPoint(latlng) {
+    console.log('Add point at:', latlng);  // This will now work correctly
+}
+
+function newRoute(latlng){
+    console.log('New route at:', latlng);  // This will now work correctly
 }
