@@ -57,3 +57,39 @@ async function toggleDarkMode(currentMode) {
         console.error("Error toggling dark mode:", error);
     }
 }
+
+const fetchAutoRoute = async (startLongitude, startLatitude, endLongitude, endLatitude) => {
+    if (!autoApiKey) {
+      showError("Missing API key. Please check your settings.");
+      return null;
+    }
+
+    const api_url = "https://nautical-hub.skippo.io/aws/autoroute";
+    const auth_header = `Basic ${autoApiKey}`;
+    const course = `${startLongitude},${startLatitude};${endLongitude},${endLongitude}`;
+
+    const params = new URLSearchParams({
+      usehydrographica: "true",
+      course: course,
+      safetydepth: "1.5",
+      safetyheight: "6",
+      boatspeed: "5"
+    });
+
+    try {
+      const response = await fetch(`${autoUrl}?${params.toString()}`, {
+        method: 'GET',
+        headers: { "Authorization": auth_header }
+      });
+
+      if (!response.ok) {
+        showError(`Failed to retrieve data: ${response.status} ${response.statusText}`);
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      showError("Error while fetching route data. Please check your internet connection.");
+      return null;
+    }
+  };

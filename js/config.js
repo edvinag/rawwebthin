@@ -7,17 +7,16 @@ var boatIcon = L.icon({
     popupAnchor: [0, -15]
 });
 
-// URL Handling
-function getUrlParameter(name) {
+function getStoredOrParam(key) {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(name);
+    const paramValue = urlParams.get(key);
+    if (paramValue) {
+        localStorage.setItem(key, paramValue);
+    }
+    return paramValue || localStorage.getItem(key) || '';
 }
 
-const storedUrl = localStorage.getItem('boatDataUrl') || '';
-const urlParam = getUrlParameter('url');
+const apiUrl = getStoredOrParam('boatDataUrl');
+const autoUrl = getStoredOrParam('autoUrl');
+const autoApiKey = getStoredOrParam('autoApiKey');
 
-if (urlParam) {
-    localStorage.setItem('boatDataUrl', urlParam);
-}
-
-const apiUrl = urlParam || storedUrl;

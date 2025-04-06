@@ -68,6 +68,9 @@ async function initializeMap() {
     });
     map.addControl(new followBoatControl());
 
+    map.doubleClickZoom.disable();
+    createPopup(map);
+
     await drawRoute(map);
     await initializeBoat(map);
 }
