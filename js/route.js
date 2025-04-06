@@ -22,23 +22,7 @@ async function drawRoute(map) {
 
         // Create a circle marker for each point in the route
         coordinates.forEach((point, index) => {
-            const circleMarker = L.marker(point, {
-                icon: circleIcon,
-                draggable: true,
-            }).addTo(map);
-
-            circleMarker.on('dblclick', (e) => {
-                updateRouteIndex(index);
-            });
-
-
-            // Use the index for efficient visual update during dragging
-            circleMarker.on('drag', (e) => updateRoutePolyline(index, e.target.getLatLng()));
-
-            // Push the entire route to the server when dragging ends (no index)
-            circleMarker.on('dragend', pushRouteOnDragEnd);
-
-            routeMarkers.push(circleMarker);
+            addMarker(point, index, map);
         });
 
         // Draw or update the route polyline
@@ -50,6 +34,34 @@ async function drawRoute(map) {
         }
     }
 }
+
+function addMarker(latLng, index, map) {
+    const circleMarker = L.marker(latLng, {
+        icon: circleIcon,
+        draggable: true,
+    }).addTo(map);
+
+    circleMarker.on('dblclick', (e) => {
+        updateRouteIndex(index);
+    });
+
+
+    // Use the index for efficient visual update during dragging
+    circleMarker.on('drag', (e) => updateRoutePolyline(index, e.target.getLatLng()));
+
+    // Push the entire route to the server when dragging ends (no index)
+    circleMarker.on('dragend', pushRouteOnDragEnd);
+
+    routeMarkers.push(circleMarker);
+}
+
+function addPointToRoute(latLng, map) {
+    addMarker(latLng, routeMarkers.length, map); // Use the current length as the index
+
+    routePolyline.addLatLng(latLng); // Add the new point to the polyline
+    pushRouteData(routePolyline.toGeoJSON(), true); // Push the updated route to the server
+}
+
 
 // ✅ Update the polyline visually when a specific marker is dragged (uses index)
 function updateRoutePolyline(index, latLng) {

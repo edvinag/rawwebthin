@@ -1,6 +1,6 @@
 // popup.js - Handles the Popup Display
 
-var aoutRoute = false; // Default auto route state
+var autoRoute = false; // Default auto route state
 
 function createPopup(map) {
     map.on('dblclick', function (e) {
@@ -119,12 +119,19 @@ function createPopup(map) {
             `)
             .openOn(map);
 
-        // Attach event listeners after rendering
-        document.getElementById('addButton').addEventListener('click', () => addPoint(e.latlng));
-        document.getElementById('pinButton').addEventListener('click', () => newRoute(e.latlng));
+
+        document.getElementById('addButton').addEventListener('click', () => {
+            addPointToRoute(e.latlng, map);
+            map.closePopup();  // Close the popup
+        });
+
+        document.getElementById('pinButton').addEventListener('click', () => {
+            newRoute(e.latlng);
+            map.closePopup();  // Close the popup
+        });
 
         // Toggle switch event listener
-        document.getElementById('modeToggle').addEventListener('change', function() {
+        document.getElementById('modeToggle').addEventListener('change', function () {
             toggleMode(this);
         });
     });
@@ -132,13 +139,14 @@ function createPopup(map) {
 
 function toggleMode(checkbox) {
     const label = document.getElementById('toggleLabel');
-    aoutRoute = checkbox.checked; // Update the global variable
+    autoRoute = checkbox.checked; // Update the global variable
 }
 
 function addPoint(latlng) {
     console.log('Add point at:', latlng);  // This will now work correctly
+    routePolyline.addLatLng(latlng); // Add the new point to the polyline
 }
 
-function newRoute(latlng){
+function newRoute(latlng) {
     console.log('New route at:', latlng);  // This will now work correctly
 }
