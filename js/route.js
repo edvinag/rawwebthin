@@ -55,7 +55,7 @@ function addMarker(latLng, index, map) {
     routeMarkers.push(circleMarker);
 }
 
-async function addPointToRoute(latLng, map, isAutoRoute = false) {
+async function addPointToRoute(latLng, map, isAutoRoute = false, keepIndex = true) {
     if (isAutoRoute) {
         const newCoordinates = await fetchAutoRoute(routeMarkers[routeMarkers.length - 1].getLatLng(), latLng);
         console.log(newCoordinates); // Log the new coordinates
@@ -72,7 +72,7 @@ async function addPointToRoute(latLng, map, isAutoRoute = false) {
 
         routePolyline.addLatLng(latLng); // Add the new point to the polyline
     }
-    pushRouteData(routePolyline.toGeoJSON(), true);
+    pushRouteData(routePolyline.toGeoJSON(), keepIndex);
 }
 
 async function newRoute(latLng, map, isAutoRoute = false) {
@@ -89,7 +89,7 @@ async function newRoute(latLng, map, isAutoRoute = false) {
     routePolyline = L.polyline([firstPosition], { color: routeColor, weight: 5, opacity: 0.8 }).addTo(map);
     
 
-    addPointToRoute(latLng, map, isAutoRoute); // Add the first point to the route
+    addPointToRoute(latLng, map, isAutoRoute, keepIndex = false); // Add the first point to the route
 }
 
 
