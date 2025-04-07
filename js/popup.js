@@ -126,27 +126,13 @@ function createPopup(map) {
         });
 
         document.getElementById('pinButton').addEventListener('click', () => {
-            newRoute(e.latlng);
+            newRoute(e.latlng, map, autoRoute); // Pass autoRoute state
             map.closePopup();  // Close the popup
         });
 
         // Toggle switch event listener
         document.getElementById('modeToggle').addEventListener('change', function () {
-            toggleMode(this);
+            autoRoute = this.checked;
         });
     });
-}
-
-function toggleMode(checkbox) {
-    autoRoute = checkbox.checked; // Update the global variable
-    console.log('Auto route mode:', autoRoute); // Log the current state
-}
-
-function addPoint(latlng) {
-    console.log('Add point at:', latlng);  // This will now work correctly
-    routePolyline.addLatLng(latlng); // Add the new point to the polyline
-}
-
-function newRoute(latlng) {
-    console.log('New route at:', latlng);  // This will now work correctly
 }

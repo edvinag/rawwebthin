@@ -75,6 +75,23 @@ async function addPointToRoute(latLng, map, isAutoRoute = false) {
     pushRouteData(routePolyline.toGeoJSON(), true);
 }
 
+async function newRoute(latLng, map, isAutoRoute = false) {
+    if (routePolyline) {
+        routePolyline.setLatLngs([]);
+    }
+    routeMarkers.forEach(marker => map.removeLayer(marker)); // Remove all markers
+    routeMarkers = []; // Reset the markers array
+    var firstPosition = {
+        lat: boatPosition.latitude,
+        lng: boatPosition.longitude
+    };
+    addMarker(firstPosition, 0, map); // Add the first marker
+    routePolyline = L.polyline([firstPosition], { color: routeColor, weight: 5, opacity: 0.8 }).addTo(map);
+    
+
+    addPointToRoute(latLng, map, isAutoRoute); // Add the first point to the route
+}
+
 
 // ✅ Update the polyline visually when a specific marker is dragged (uses index)
 function updateRoutePolyline(index, latLng) {
@@ -87,10 +104,12 @@ function updateRoutePolyline(index, latLng) {
 }
 
 function updateGoalMarker(index, map) {
-    if (goalMarker) {
-        goalMarker.setLatLng(routeMarkers[index].getLatLng());
-    } else {
-        goalMarker = L.circleMarker(routeMarkers[index].getLatLng()).addTo(map);
+    if (routeMarkers.length > index) {
+        if (goalMarker) {
+            goalMarker.setLatLng(routeMarkers[index].getLatLng());
+        } else {
+            goalMarker = L.circleMarker(routeMarkers[index].getLatLng()).addTo(map);
+        }
     }
 }
 
