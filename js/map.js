@@ -5,10 +5,15 @@ let followBoatControlContainer; // Declare a global variable for the follow boat
 
 async function initializeMap() {
     const map = L.map('map');
-
-    map.setView([60.0, 10.0], getStoredInt('zoom', 16)); // Set the initial view based on stored zoom level
+    map.setView([getStoredDouble('mapLat',50), getStoredDouble('mapLng',10)], getStoredInt('zoom', 16)); // Set the initial view based on stored zoom level
+    
     map.on('zoomend', function (e) {
         setStoredInt('zoom', map.getZoom()); // Store the zoom level in localStorage
+    });
+
+    map.on('moveend', function (e) {
+        setStoredDouble('mapLat', map.getCenter().lat); // Store the latitude in localStorage
+        setStoredDouble('mapLng', map.getCenter().lng); // Store the longitude in localStorage
     });
 
 

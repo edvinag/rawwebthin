@@ -22,6 +22,10 @@ function getStoredBoolean(key, defaultValue) {
     return storedValue === 'true';
 }
 
+function setStoredBoolean(key, value) {
+    localStorage.setItem(key, value.toString());
+}
+
 function getStoredInt(key, defaultValue) {
     const storedValue = localStorage.getItem(key);
     if (storedValue === null) return defaultValue;
@@ -32,7 +36,13 @@ function setStoredInt(key, value) {
     localStorage.setItem(key, value.toString());
 }
 
-function setStoredBoolean(key, value) {
+function getStoredDouble(key, defaultValue) {
+    const storedValue = localStorage.getItem(key);
+    if (storedValue === null) return defaultValue;
+    return parseFloat(storedValue);
+}
+
+function setStoredDouble(key, value) {
     localStorage.setItem(key, value.toString());
 }
 
@@ -41,5 +51,3 @@ const autoUrl = getStoredOrParam('autoUrl');
 const autoApiKey = getStoredOrParam('autoApiKey');
 let autoRoute = getStoredBoolean('autoRoute', true);
 let followboat = getStoredBoolean('followboat', false);
-
-let zoom = getStoredInt('zoom', 16);
