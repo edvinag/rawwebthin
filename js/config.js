@@ -22,6 +22,16 @@ function getStoredBoolean(key, defaultValue) {
     return storedValue === 'true';
 }
 
+function getStoredInt(key, defaultValue) {
+    const storedValue = localStorage.getItem(key);
+    if (storedValue === null) return defaultValue;
+    return parseInt(storedValue, 10);
+}
+
+function setStoredInt(key, value) {
+    localStorage.setItem(key, value.toString());
+}
+
 function setStoredBoolean(key, value) {
     localStorage.setItem(key, value.toString());
 }
@@ -31,3 +41,5 @@ const autoUrl = getStoredOrParam('autoUrl');
 const autoApiKey = getStoredOrParam('autoApiKey');
 let autoRoute = getStoredBoolean('autoRoute', true);
 let followboat = getStoredBoolean('followboat', false);
+
+let zoom = getStoredInt('zoom', 16);

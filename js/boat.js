@@ -44,7 +44,6 @@ async function initializeBoat(map) {
             boatMarker = L.marker([latitude, longitude], { icon: boatIcon }).addTo(map);
             boatMarker.setIconAngle(course);
             boatMarker.bindPopup(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude} <br>Course: ${course}`);
-            map.setView([latitude, longitude], 16);
         }
 
         // Draw or update the dotted line between boat and reflocation

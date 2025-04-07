@@ -6,6 +6,12 @@ let followBoatControlContainer; // Declare a global variable for the follow boat
 async function initializeMap() {
     const map = L.map('map');
 
+    map.setView([60.0, 10.0], getStoredInt('zoom', 16)); // Set the initial view based on stored zoom level
+    map.on('zoomend', function (e) {
+        setStoredInt('zoom', map.getZoom()); // Store the zoom level in localStorage
+    });
+
+
     L.tileLayer('https://{s}.eniro.no/geowebcache/service/tms1.0.0/nautical2x/{z}/{x}/{y}.png?c=crc&v=20200602', {
         maxZoom: 17,
         minZoom: 3,
