@@ -2,7 +2,6 @@
 
 let darkModeControlContainer; // Declare a global variable for the control container
 let followBoatControlContainer; // Declare a global variable for the follow boat control container
-let followboat = false;
 
 async function initializeMap() {
     const map = L.map('map');
@@ -53,11 +52,12 @@ async function initializeMap() {
                 width: '30px',
                 height: '30px',
                 cursor: 'pointer',
-                backgroundImage: "url(assets/followboat_off.png)"
+                backgroundImage: followboat ? "url(assets/followboat_on.png)" : "url(assets/followboat_off.png)"
             });
 
             followBoatControlContainer.addEventListener('click', () => {
                 followboat = !followboat;
+                setStoredBoolean('followboat', followboat); // Store the new state in localStorage
                 followBoatControlContainer.style.backgroundImage = followboat ? "url(assets/followboat_on.png)" : "url(assets/followboat_off.png)";
             });
 

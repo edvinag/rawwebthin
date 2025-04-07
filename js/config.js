@@ -29,4 +29,5 @@ function setStoredBoolean(key, value) {
 const apiUrl = getStoredOrParam('boatDataUrl');
 const autoUrl = getStoredOrParam('autoUrl');
 const autoApiKey = getStoredOrParam('autoApiKey');
-let autoRoute = getStoredBoolean('autoRoute', true); // Default is true
+let autoRoute = getStoredBoolean('autoRoute', true);
+let followboat = getStoredBoolean('followboat', false);
