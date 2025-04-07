@@ -22,23 +22,7 @@ async function drawRoute(map) {
 
         // Create a circle marker for each point in the route
         coordinates.forEach((point, index) => {
-            const circleMarker = L.marker(point, {
-                icon: circleIcon,
-                draggable: true,
-            }).addTo(map);
-
-            circleMarker.on('dblclick', (e) => {
-                updateRouteIndex(index);
-            });
-
-
-            // Use the index for efficient visual update during dragging
-            circleMarker.on('drag', (e) => updateRoutePolyline(index, e.target.getLatLng()));
-
-            // Push the entire route to the server when dragging ends (no index)
-            circleMarker.on('dragend', pushRouteOnDragEnd);
-
-            routeMarkers.push(circleMarker);
+            addMarker(point, index, map);
         });
 
         // Draw or update the route polyline
@@ -51,6 +35,64 @@ async function drawRoute(map) {
     }
 }
 
+function addMarker(latLng, index, map) {
+    const circleMarker = L.marker(latLng, {
+        icon: circleIcon,
+        draggable: true,
+    }).addTo(map);
+
+    circleMarker.on('dblclick', (e) => {
+        updateRouteIndex(index);
+    });
+
+
+    // Use the index for efficient visual update during dragging
+    circleMarker.on('drag', (e) => updateRoutePolyline(index, e.target.getLatLng()));
+
+    // Push the entire route to the server when dragging ends (no index)
+    circleMarker.on('dragend', pushRouteOnDragEnd);
+
+    routeMarkers.push(circleMarker);
+}
+
+async function addPointToRoute(latLng, map, isAutoRoute = false, keepIndex = true) {
+    if (isAutoRoute) {
+        const newCoordinates = await fetchAutoRoute(routeMarkers[routeMarkers.length - 1].getLatLng(), latLng);
+        console.log(newCoordinates); // Log the new coordinates
+        if (newCoordinates) {
+            newCoordinates.geometry.coordinates.slice(1).forEach(coord => {
+                coord = [coord[1], coord[0]]; // Adjust the coordinate order
+                addMarker(coord, routeMarkers.length, map); // Use the current length as the index
+                routePolyline.addLatLng(coord);
+            });
+        }
+    }
+    else {
+        addMarker(latLng, routeMarkers.length, map); // Use the current length as the index
+
+        routePolyline.addLatLng(latLng); // Add the new point to the polyline
+    }
+    pushRouteData(routePolyline.toGeoJSON(), keepIndex);
+}
+
+async function newRoute(latLng, map, isAutoRoute = false) {
+    if (routePolyline) {
+        routePolyline.setLatLngs([]);
+    }
+    routeMarkers.forEach(marker => map.removeLayer(marker)); // Remove all markers
+    routeMarkers = []; // Reset the markers array
+    var firstPosition = {
+        lat: boatPosition.latitude,
+        lng: boatPosition.longitude
+    };
+    addMarker(firstPosition, 0, map); // Add the first marker
+    routePolyline = L.polyline([firstPosition], { color: routeColor, weight: 5, opacity: 0.8 }).addTo(map);
+    
+
+    addPointToRoute(latLng, map, isAutoRoute, keepIndex = false); // Add the first point to the route
+}
+
+
 // ✅ Update the polyline visually when a specific marker is dragged (uses index)
 function updateRoutePolyline(index, latLng) {
     if (routePolyline) {
@@ -62,10 +104,12 @@ function updateRoutePolyline(index, latLng) {
 }
 
 function updateGoalMarker(index, map) {
-    if (goalMarker) {
-        goalMarker.setLatLng(routeMarkers[index].getLatLng());
-    } else {
-        goalMarker = L.circleMarker(routeMarkers[index].getLatLng()).addTo(map);
+    if (routeMarkers.length > index) {
+        if (goalMarker) {
+            goalMarker.setLatLng(routeMarkers[index].getLatLng());
+        } else {
+            goalMarker = L.circleMarker(routeMarkers[index].getLatLng()).addTo(map);
+        }
     }
 }
 

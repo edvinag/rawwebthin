@@ -1,6 +1,7 @@
 // boat.js - Handles Boat Positioning and Path Management
 
 var boatPath = [];
+var boatPosition = null;
 var pathPolyline = null;
 var boatMarker = null;
 var refLine = null;  // Polyline for the line between the boat and reflocation
@@ -16,6 +17,7 @@ var targetIcon = new L.Icon({
 async function initializeBoat(map) {
     async function updateBoatPosition() {
         const boatData = await fetchBoatData();
+        boatPosition = boatData.data.gps.location;
         const { latitude, longitude } = boatData.data.gps.location;
         const course = boatData.data.gps.course;
         const reflocation = boatData.settings.controller.reflocation;
@@ -23,7 +25,7 @@ async function initializeBoat(map) {
 
         updateGoalMarker(boatData.settings.route.goalIndex, map);
         updateDarkModeControl();
-        if (followboat) {
+        if (map._loaded && followboat) {
             map.setView([latitude, longitude]);
         }
         

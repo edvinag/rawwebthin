@@ -1,23 +1,33 @@
 // config.js - Configuration and constants
 
 var boatIcon = L.icon({
-    iconUrl: 'assets/boat.png', // Adjusted path
+    iconUrl: 'assets/boat.png',
     iconSize: new L.Point(19, 26),
     iconAnchor: new L.Point(9, 13),
     popupAnchor: [0, -15]
 });
 
-// URL Handling
-function getUrlParameter(name) {
+function getStoredOrParam(key) {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(name);
+    const paramValue = urlParams.get(key);
+    if (paramValue) {
+        localStorage.setItem(key, paramValue);
+    }
+    return paramValue || localStorage.getItem(key) || '';
 }
 
-const storedUrl = localStorage.getItem('boatDataUrl') || '';
-const urlParam = getUrlParameter('url');
-
-if (urlParam) {
-    localStorage.setItem('boatDataUrl', urlParam);
+function getStoredBoolean(key, defaultValue) {
+    const storedValue = localStorage.getItem(key);
+    if (storedValue === null) return defaultValue;
+    return storedValue === 'true';
 }
 
-const apiUrl = urlParam || storedUrl;
+function setStoredBoolean(key, value) {
+    localStorage.setItem(key, value.toString());
+}
+
+const apiUrl = getStoredOrParam('boatDataUrl');
+const autoUrl = getStoredOrParam('autoUrl');
+const autoApiKey = getStoredOrParam('autoApiKey');
+let autoRoute = getStoredBoolean('autoRoute', true);
+let followboat = getStoredBoolean('followboat', false);
