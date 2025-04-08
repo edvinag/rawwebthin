@@ -92,3 +92,7 @@ async function fetchAutoRoute(start, end) {
       return null;
     }
 };
+
+function isIphone() {
+    return /iPhone/i.test(navigator.userAgent);
+}
