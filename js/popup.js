@@ -1,18 +1,18 @@
 // popup.js - Handles the Popup Display
 
-var timeSinceLastClick = 0;
+var timeSinceLastClickOnMap = 0;
 
 function createPopup(map) {
 
 
-    if (isIphone()) {
+    if (isPhone()) {
         map.on('click', function (e) {
 
-            if (Date.now() - timeSinceLastClick < 200) {
+            if (Date.now() - timeSinceLastClickOnMap < 200) {
                 popPopup(map, e);
             }
 
-            timeSinceLastClick = Date.now();
+            timeSinceLastClickOnMap = Date.now();
         });
     }
 

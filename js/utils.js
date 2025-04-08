@@ -58,10 +58,6 @@ async function toggleDarkMode(currentMode) {
     }
 }
 
-async function fetchAutoRoute2(start, end) {
-    console.log("Testing auto route 2");
-}
-
 async function fetchAutoRoute(start, end) {
     const api_url = "https://nautical-hub.skippo.io/aws/autoroute";
     const auth_header = `Basic ${autoApiKey}`;
@@ -93,6 +89,14 @@ async function fetchAutoRoute(start, end) {
     }
 };
 
+function isPhone(){
+    return isIphone() || isAndroid();
+}
+
 function isIphone() {
     return /iPhone/i.test(navigator.userAgent);
+}
+
+function isAndroid() {
+    return /Android/i.test(navigator.userAgent);
 }

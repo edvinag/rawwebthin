@@ -40,11 +40,20 @@ function addMarker(latLng, index, map) {
         icon: circleIcon,
         draggable: true,
     }).addTo(map);
+    circleMarker.timeSinceLastClicked = null; // Initialize timeSinceLastClicked
 
-    circleMarker.on('dblclick', (e) => {
-        updateRouteIndex(index);
-    });
-
+    if (isPhone()) {
+        circleMarker.on('click', (e) => {
+            if (circleMarker.timeSinceLastClicked && Date.now() - circleMarker.timeSinceLastClicked < 200) {
+                updateRouteIndex(index);
+            }
+            circleMarker.timeSinceLastClicked = Date.now();
+        });
+    } else {
+        circleMarker.on('dblclick', (e) => {
+            updateRouteIndex(index);
+        });
+    }
 
     // Use the index for efficient visual update during dragging
     circleMarker.on('drag', (e) => updateRoutePolyline(index, e.target.getLatLng()));
@@ -58,7 +67,6 @@ function addMarker(latLng, index, map) {
 async function addPointToRoute(latLng, map, isAutoRoute = false, keepIndex = true) {
     if (isAutoRoute) {
         const newCoordinates = await fetchAutoRoute(routeMarkers[routeMarkers.length - 1].getLatLng(), latLng);
-        console.log(newCoordinates); // Log the new coordinates
         if (newCoordinates) {
             newCoordinates.geometry.coordinates.slice(1).forEach(coord => {
                 coord = [coord[1], coord[0]]; // Adjust the coordinate order
@@ -87,7 +95,7 @@ async function newRoute(latLng, map, isAutoRoute = false) {
     };
     addMarker(firstPosition, 0, map); // Add the first marker
     routePolyline = L.polyline([firstPosition], { color: routeColor, weight: 5, opacity: 0.8 }).addTo(map);
-    
+
 
     addPointToRoute(latLng, map, isAutoRoute, keepIndex = false); // Add the first point to the route
 }
