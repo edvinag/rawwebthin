@@ -90,7 +90,7 @@ async function fetchAutoRoute(start, end) {
 };
 
 function isPhone(){
-    return isIphone() || isAndroid();
+    return isIphone();
 }
 
 function isIphone() {
