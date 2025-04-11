@@ -7,6 +7,7 @@ var boatMarker = null;
 var refLine = null;  // Polyline for the line between the boat and reflocation
 var refLocationMarker = null; // Marker for the end of the refLine
 var darkMode = false; // Default dark mode state
+var boatDarkCircle = null;
 
 var targetIcon = new L.Icon({
     iconUrl: 'assets/target.png',
@@ -66,6 +67,29 @@ async function initializeBoat(map) {
         }
 
         boatMarker.getPopup().setContent(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
+
+        // Add or update a dark circle around the boat if dark mode is enabled
+        if (darkMode) {
+            const circleOptions = {
+                color: null,
+                fillColor: 'black',
+                fillOpacity: 0.4,
+                radius: 100, // Adjust radius as needed (in meters)
+                pane: 'shadowPane' // Renders below markers
+            };
+
+            if (boatDarkCircle) {
+                boatDarkCircle.setLatLng([latitude, longitude]);
+            } else {
+                boatDarkCircle = L.circle([latitude, longitude], circleOptions).addTo(map);
+            }
+        } else {
+            if (boatDarkCircle) {
+                map.removeLayer(boatDarkCircle);
+                boatDarkCircle = null;
+            }
+        }
+
     }
 
     await updateBoatPosition();
