@@ -1,97 +1,198 @@
-// boat.js - Handles Boat Positioning and Path Management
+// ./js/boat.js
+// Handles boat positioning and path management for Mapbox GL JS.
+// Requires:
+// - mapboxgl (loaded from CDN)
+// - fetchBoatData() available globally from ./js/utils.js
 
-var boatPath = [];
-var boatPosition = null;
-var pathPolyline = null;
-var boatMarker = null;
-var refLine = null;  // Polyline for the line between the boat and reflocation
-var refLocationMarker = null; // Marker for the end of the refLine
-var darkMode = false; // Default dark mode state
-var boatDarkCircle = null;
+(() => {
+    const ensureSource = (map, id, data) => {
+        if (map.getSource(id)) return;
+        map.addSource(id, { type: 'geojson', data });
+    };
 
-var targetIcon = new L.Icon({
-    iconUrl: 'assets/target.png',
-    shadowUrl: null,
-    iconSize: new L.Point(30, 30)
-});
+    const setSourceData = (map, id, data) => {
+        const src = map.getSource(id);
+        if (src) src.setData(data);
+    };
 
-async function initializeBoat(map) {
-    async function updateBoatPosition() {
-        const boatData = await fetchBoatData();
-        boatPosition = boatData.data.gps.location;
-        const { latitude, longitude } = boatData.data.gps.location;
-        const course = boatData.data.gps.course;
-        const reflocation = boatData.settings.controller.reflocation;
-        darkMode = boatData.settings.rudder.darkMode; // Update dark mode state
+    const ensureLineLayer = (map, sourceId, layerId, paint) => {
+        if (map.getLayer(layerId)) return;
+        map.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            paint
+        });
+    };
 
-        updateGoalMarker(boatData.settings.route.goalIndex, map);
-        updateDarkModeControl();
-        if (map._loaded && followboat) {
-            map.setView([latitude, longitude]);
-        }
-        
-        boatPath.push([latitude, longitude]);
+    const ensureCircleLayer = (map, sourceId, layerId, paint) => {
+        if (map.getLayer(layerId)) return;
+        map.addLayer({
+            id: layerId,
+            type: 'circle',
+            source: sourceId,
+            paint
+        });
+    };
 
-        if (pathPolyline) {
-            pathPolyline.setLatLngs(boatPath);
-        } else {
-            pathPolyline = L.polyline(boatPath, { color: 'green', weight: 3, opacity: 0.8 }).addTo(map);
-        }
+    const createElMarker = (className, imageUrl) => {
+        const el = document.createElement('div');
+        el.className = className;
+        el.style.backgroundImage = `url('${imageUrl}')`;
+        return el;
+    };
 
-        if (boatMarker) {
-            boatMarker.setLatLng([latitude, longitude]);
-            boatMarker.setIconAngle(course);
-        } else {
-            boatMarker = L.marker([latitude, longitude], { icon: boatIcon }).addTo(map);
-            boatMarker.setIconAngle(course);
-            boatMarker.bindPopup(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude} <br>Course: ${course}`);
-        }
-
-        // Draw or update the dotted line between boat and reflocation
-        const refLocationCoords = [reflocation.latitude, reflocation.longitude];
-        if (refLine) {
-            refLine.setLatLngs([[latitude, longitude], refLocationCoords]);
-        } else {
-            refLine = L.polyline([[latitude, longitude], refLocationCoords], {
-                color: 'red', weight: 4, opacity: 0.5, dashArray: '5, 5'
-            }).addTo(map);
+    async function initializeBoat(map, options = {}) {
+        if (typeof fetchBoatData !== 'function') {
+            throw new Error('fetchBoatData() not found. Load ./js/utils.js before ./js/boat.js');
         }
 
-        // Place or update the black point at the end of refLocationCoords and fill it
-        if (refLocationMarker) {
-            refLocationMarker.setLatLng(refLocationCoords);
-        } else {
-            refLocationMarker = L.marker(refLocationCoords, {
-                icon: targetIcon
-            }).addTo(map);
-        }
+        const config = {
+            intervalMs: 500,
+            boatIconUrl: 'assets/boat.png',
+            targetIconUrl: 'assets/target.png',
+            courseOffsetDeg: 0,
+            darkCircleRadiusPx: 100,
+            followBoat: () => Boolean(window.followboat),
+            ...options
+        };
 
-        boatMarker.getPopup().setContent(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
+        const ids = {
+            pathSource: 'boat-path-source',
+            pathLayer: 'boat-path-layer',
+            refLineSource: 'boat-refline-source',
+            refLineLayer: 'boat-refline-layer',
+            darkCircleSource: 'boat-darkcircle-source',
+            darkCircleLayer: 'boat-darkcircle-layer'
+        };
 
-        // Add or update a dark circle around the boat if dark mode is enabled
-        if (darkMode) {
-            const circleOptions = {
-                color: null,
-                fillColor: 'black',
-                fillOpacity: 0.4,
-                radius: 100, // Adjust radius as needed (in meters)
-                pane: 'shadowPane' // Renders below markers
-            };
+        const boatPath = [];
 
-            if (boatDarkCircle) {
-                boatDarkCircle.setLatLng([latitude, longitude]);
-            } else {
-                boatDarkCircle = L.circle([latitude, longitude], circleOptions).addTo(map);
+        // Path
+        ensureSource(map, ids.pathSource, {
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: [] },
+            properties: {}
+        });
+
+        ensureLineLayer(map, ids.pathSource, ids.pathLayer, {
+            'line-width': 3,
+            'line-opacity': 0.8,
+            'line-color': '#00aa00'
+        });
+
+        // Ref line
+        ensureSource(map, ids.refLineSource, {
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: [] },
+            properties: {}
+        });
+
+        ensureLineLayer(map, ids.refLineSource, ids.refLineLayer, {
+            'line-width': 4,
+            'line-opacity': 0.5,
+            'line-color': '#ff0000',
+            'line-dasharray': [2, 2]
+        });
+
+        // Dark circle
+        ensureSource(map, ids.darkCircleSource, {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [0, 0] },
+            properties: {}
+        });
+
+        ensureCircleLayer(map, ids.darkCircleSource, ids.darkCircleLayer, {
+            'circle-radius': config.darkCircleRadiusPx,
+            'circle-color': '#000000',
+            'circle-opacity': 0.4
+        });
+
+        map.setLayoutProperty(ids.darkCircleLayer, 'visibility', 'none');
+
+        // Markers
+        const boatEl = createElMarker('boat-marker', config.boatIconUrl);
+        const boatPopup = new mapboxgl.Popup({ offset: 18, closeButton: false });
+
+        const boatMarker = new mapboxgl.Marker({ element: boatEl })
+            .setLngLat(map.getCenter().toArray())
+            .setPopup(boatPopup)
+            .addTo(map);
+
+        const refEl = createElMarker('ref-marker', config.targetIconUrl);
+        const refMarker = new mapboxgl.Marker({ element: refEl })
+            .setLngLat([map.getCenter().lng + 0.01, map.getCenter().lat + 0.01])
+            .addTo(map);
+
+        const updateBoatPosition = async () => {
+            const boatData = await fetchBoatData();
+
+            const { latitude, longitude } = boatData.data.gps.location;
+            const course = boatData.data.gps.course;
+            const reflocation = boatData.settings.controller.reflocation;
+            const darkMode = Boolean(boatData.settings.rudder.darkMode);
+
+            if (typeof window.updateGoalMarker === 'function') {
+                window.updateGoalMarker(boatData.settings.route.goalIndex, map);
             }
-        } else {
-            if (boatDarkCircle) {
-                map.removeLayer(boatDarkCircle);
-                boatDarkCircle = null;
-            }
-        }
 
+            if (typeof window.updateDarkModeControl === 'function') {
+                window.updateDarkModeControl();
+            }
+
+            const boatLngLat = [longitude, latitude];
+            const refLngLat = [reflocation.longitude, reflocation.latitude];
+
+            if (config.followBoat()) {
+                map.easeTo({ center: boatLngLat, duration: 250 });
+            }
+
+            boatPath.push(boatLngLat);
+
+            setSourceData(map, ids.pathSource, {
+                type: 'Feature',
+                geometry: { type: 'LineString', coordinates: boatPath },
+                properties: {}
+            });
+
+            setSourceData(map, ids.refLineSource, {
+                type: 'Feature',
+                geometry: { type: 'LineString', coordinates: [boatLngLat, refLngLat] },
+                properties: {}
+            });
+
+            setSourceData(map, ids.darkCircleSource, {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: boatLngLat },
+                properties: {}
+            });
+
+            map.setLayoutProperty(
+                ids.darkCircleLayer,
+                'visibility',
+                darkMode ? 'visible' : 'none'
+            );
+
+            boatMarker.setLngLat(boatLngLat);
+            refMarker.setLngLat(refLngLat);
+
+            boatEl.style.transform = `rotate(${course + config.courseOffsetDeg}deg)`;
+
+            boatPopup.setHTML(
+                `<b>Boat Location</b><br>
+                 Latitude: ${latitude}<br>
+                 Longitude: ${longitude}<br>
+                 Course: ${course}`
+            );
+        };
+
+        await updateBoatPosition();
+        const timer = window.setInterval(updateBoatPosition, config.intervalMs);
+
+        return {
+            stop: () => window.clearInterval(timer)
+        };
     }
 
-    await updateBoatPosition();
-    setInterval(updateBoatPosition, 500);
-}
+    window.initializeBoat = initializeBoat;
+})();

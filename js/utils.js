@@ -1,5 +1,7 @@
 // utils.js - Helper functions for fetching and pushing data
 
+const apiUrl = 'https://raw-bridge-server.onrender.com/sim';
+
 async function fetchBoatData() {
     const response = await fetch(apiUrl.replace(/\/$/, '') + '/all');
     const data = await response.json();
