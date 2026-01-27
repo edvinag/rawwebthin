@@ -5,6 +5,7 @@
 // - Create and update a boat marker with heading
 // - Draw traveled path, reference line, and dark mode circle
 // - Poll boat data at a fixed interval (no overlapping requests)
+// - Keep the boat icon heading correct when the map is rotated
 // - Expose a small lifecycle API (start / stop / destroy)
 //
 // Requirements:
@@ -76,63 +77,63 @@
 
         // --- Path layer ----------------------------------------------------
         ensureSource(map, IDS.pathSource, {
-            type: "Feature",
-            geometry: { type: "LineString", coordinates: [] },
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: [] },
             properties: {}
         });
 
         ensureLayer(map, {
             id: IDS.pathLayer,
-            type: "line",
+            type: 'line',
             source: IDS.pathSource,
             paint: {
-                "line-width": 3,
-                "line-opacity": 0.8,
-                "line-color": "#00aa00"
+                'line-width': 3,
+                'line-opacity': 0.8,
+                'line-color': '#00aa00'
             }
         });
 
         // --- Reference line (boat -> target) -------------------------------
         ensureSource(map, IDS.refSource, {
-            type: "Feature",
-            geometry: { type: "LineString", coordinates: [] },
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: [] },
             properties: {}
         });
 
         ensureLayer(map, {
             id: IDS.refLayer,
-            type: "line",
+            type: 'line',
             source: IDS.refSource,
             paint: {
-                "line-width": 4,
-                "line-opacity": 0.5,
-                "line-color": "#ff0000",
-                "line-dasharray": [2, 2]
+                'line-width': 4,
+                'line-opacity': 0.5,
+                'line-color': '#ff0000',
+                'line-dasharray': [2, 2]
             }
         });
 
         // --- Dark mode circle ----------------------------------------------
         ensureSource(map, IDS.darkSource, {
-            type: "Feature",
-            geometry: { type: "Point", coordinates: [0, 0] },
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [0, 0] },
             properties: {}
         });
 
         ensureLayer(map, {
             id: IDS.darkLayer,
-            type: "circle",
+            type: 'circle',
             source: IDS.darkSource,
             paint: {
-                "circle-radius": config.darkCircleRadiusPx,
-                "circle-color": "#000000",
-                "circle-opacity": 0.4
+                'circle-radius': config.darkCircleRadiusPx,
+                'circle-color': '#000000',
+                'circle-opacity': 0.4
             }
         });
 
-        map.setLayoutProperty(IDS.darkLayer, "visibility", "none");
+        map.setLayoutProperty(IDS.darkLayer, 'visibility', 'none');
 
         // --- Markers -------------------------------------------------------
-        const boat = markerEl("boat-marker", config.boatIconUrl);
+        const boat = markerEl('boat-marker', config.boatIconUrl);
         const boatPopup = new mapboxgl.Popup({ offset: 18, closeButton: false });
 
         const boatMarker = new mapboxgl.Marker({ element: boat.root })
@@ -140,12 +141,27 @@
             .setPopup(boatPopup)
             .addTo(map);
 
-        const ref = markerEl("ref-marker", config.targetIconUrl);
+        const ref = markerEl('ref-marker', config.targetIconUrl);
         const c = map.getCenter();
 
         const refMarker = new mapboxgl.Marker({ element: ref.root })
             .setLngLat([c.lng + 0.01, c.lat + 0.01])
             .addTo(map);
+
+        // --- Heading state -------------------------------------------------
+        // We store the latest course, then derive the final CSS rotation as:
+        // (course + offset - mapBearing) so it stays correct when the user rotates the map.
+        let lastCourse = null;
+
+        const applyBoatRotation = () => {
+            if (!Number.isFinite(lastCourse)) return;
+            const bearing = map.getBearing();
+            const angle = lastCourse + config.courseOffsetDeg - bearing;
+            boat.img.style.transform = `rotate(${angle}deg)`;
+        };
+
+        // Re-apply heading whenever the map bearing changes (user rotates the map)
+        map.on('rotate', () => applyBoatRotation());
 
         // --- Polling state -------------------------------------------------
         let timer = null;
@@ -194,16 +210,16 @@
                 }
 
                 setData(map, IDS.pathSource, {
-                    type: "Feature",
-                    geometry: { type: "LineString", coordinates: path },
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: path },
                     properties: {}
                 });
 
                 // Update reference line and marker
                 if (refLngLat) {
                     setData(map, IDS.refSource, {
-                        type: "Feature",
-                        geometry: { type: "LineString", coordinates: [boatLngLat, refLngLat] },
+                        type: 'Feature',
+                        geometry: { type: 'LineString', coordinates: [boatLngLat, refLngLat] },
                         properties: {}
                     });
                     refMarker.setLngLat(refLngLat);
@@ -211,21 +227,24 @@
 
                 // Update dark mode circle
                 setData(map, IDS.darkSource, {
-                    type: "Feature",
-                    geometry: { type: "Point", coordinates: boatLngLat },
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: boatLngLat },
                     properties: {}
                 });
 
                 map.setLayoutProperty(
                     IDS.darkLayer,
-                    "visibility",
-                    darkMode ? "visible" : "none"
+                    'visibility',
+                    darkMode ? 'visible' : 'none'
                 );
 
-                // Update boat marker position and heading
+                // Update boat marker position
                 boatMarker.setLngLat(boatLngLat);
+
+                // Store course and apply corrected rotation (accounts for map bearing)
                 if (Number.isFinite(course)) {
-                    boat.img.style.transform = `rotate(${course + config.courseOffsetDeg}deg)`;
+                    lastCourse = course;
+                    applyBoatRotation();
                 }
 
                 // Update popup content
@@ -236,7 +255,7 @@
                      Course: ${course}`
                 );
             } catch (err) {
-                console.error("Boat tick failed:", err);
+                console.error('Boat tick failed:', err);
             } finally {
                 inFlight = false;
                 schedule();
@@ -262,6 +281,8 @@
             if (destroyed) return;
             destroyed = true;
             stop();
+
+            map.off('rotate', applyBoatRotation);
 
             boatMarker.remove();
             refMarker.remove();
