@@ -1,70 +1,46 @@
-// ./js/boat.js
-// Minimal boat tracker for Mapbox GL JS.
-//
-// Responsibilities:
-// - Create and update a boat marker with heading
-// - Draw traveled path, reference line, and dark mode circle
-// - Poll boat data at a fixed interval (no overlapping requests)
-// - Keep the boat icon heading correct when the map is rotated
-// - Expose a small lifecycle API (start / stop / destroy)
-//
-// Requirements:
-// - mapboxgl (global)
-// - fetchBoatData() (global)
-//
-// Public API:
-// - window.initializeBoat(map, options) -> { start, stop, destroy }
-
 (() => {
-    // IDs for all Mapbox sources and layers used by this feature
     const IDS = {
-        pathSource: "boat-path-source",
-        pathLayer: "boat-path-layer",
-        refSource: "boat-refline-source",
-        refLayer: "boat-refline-layer",
-        darkSource: "boat-darkcircle-source",
-        darkLayer: "boat-darkcircle-layer"
+        pathSource: 'boat-path-source',
+        pathLayer: 'boat-path-layer',
+        refSource: 'boat-refline-source',
+        refLayer: 'boat-refline-layer',
+        darkSource: 'boat-darkcircle-source',
+        darkLayer: 'boat-darkcircle-layer'
     };
 
-    // Add a GeoJSON source if it does not already exist
     const ensureSource = (map, id, data) => {
-        if (!map.getSource(id)) map.addSource(id, { type: "geojson", data });
+        if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data });
     };
 
-    // Add a layer if it does not already exist
     const ensureLayer = (map, layer) => {
         if (!map.getLayer(layer.id)) map.addLayer(layer);
     };
 
-    // Safely update GeoJSON source data
     const setData = (map, id, data) => {
         const src = map.getSource(id);
         if (src && src.setData) src.setData(data);
     };
 
-    // Create a marker element with a rotatable child element
-    // Rotation is applied to the child to avoid clobbering Mapbox transforms
     const markerEl = (className, imageUrl) => {
-        const root = document.createElement("div");
+        const root = document.createElement('div');
         root.className = className;
 
-        const img = document.createElement("div");
+        const img = document.createElement('div');
         img.className = `${className}__img`;
         img.style.backgroundImage = `url('${imageUrl}')`;
-        img.style.backgroundRepeat = "no-repeat";
-        img.style.backgroundPosition = "center";
-        img.style.backgroundSize = "contain";
+        img.style.backgroundRepeat = 'no-repeat';
+        img.style.backgroundPosition = 'center';
+        img.style.backgroundSize = 'contain';
 
         root.appendChild(img);
         return { root, img };
     };
 
     function initializeBoat(map, options = {}) {
-        // Runtime configuration with sensible defaults
         const config = {
             intervalMs: 500,
-            boatIconUrl: "./assets/boat.png",
-            targetIconUrl: "./assets/target.png",
+            boatIconUrl: './assets/boat.png',
+            targetIconUrl: './assets/target.png',
             courseOffsetDeg: 0,
             darkCircleRadiusPx: 100,
             followBoat: () => followBoat,
@@ -72,10 +48,8 @@
             ...options
         };
 
-        // Stores the traveled path as [lng, lat] points
         const path = [];
 
-        // --- Path layer ----------------------------------------------------
         ensureSource(map, IDS.pathSource, {
             type: 'Feature',
             geometry: { type: 'LineString', coordinates: [] },
@@ -93,7 +67,6 @@
             }
         });
 
-        // --- Reference line (boat -> target) -------------------------------
         ensureSource(map, IDS.refSource, {
             type: 'Feature',
             geometry: { type: 'LineString', coordinates: [] },
@@ -112,7 +85,6 @@
             }
         });
 
-        // --- Dark mode circle ----------------------------------------------
         ensureSource(map, IDS.darkSource, {
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [0, 0] },
@@ -132,7 +104,6 @@
 
         map.setLayoutProperty(IDS.darkLayer, 'visibility', 'none');
 
-        // --- Markers -------------------------------------------------------
         const boat = markerEl('boat-marker', config.boatIconUrl);
         const boatPopup = new mapboxgl.Popup({ offset: 18, closeButton: false });
 
@@ -148,9 +119,6 @@
             .setLngLat([c.lng + 0.01, c.lat + 0.01])
             .addTo(map);
 
-        // --- Heading state -------------------------------------------------
-        // We store the latest course, then derive the final CSS rotation as:
-        // (course + offset - mapBearing) so it stays correct when the user rotates the map.
         let lastCourse = null;
 
         const applyBoatRotation = () => {
@@ -160,22 +128,23 @@
             boat.img.style.transform = `rotate(${angle}deg)`;
         };
 
-        // Re-apply heading whenever the map bearing changes (user rotates the map)
         map.on('rotate', () => applyBoatRotation());
 
-        // --- Polling state -------------------------------------------------
         let timer = null;
         let stopped = false;
         let destroyed = false;
         let inFlight = false;
 
-        // Schedule next update without overlapping requests
+        // NEW: store latest position in a shared, safe format
+        let lastPosition = null;
+
+        const getPosition = () => lastPosition;
+
         const schedule = () => {
             if (destroyed || stopped) return;
             timer = window.setTimeout(() => tick(), config.intervalMs);
         };
 
-        // Single update step (fetch + render)
         const tick = async () => {
             if (destroyed || stopped || inFlight) return schedule();
             inFlight = true;
@@ -194,16 +163,18 @@
 
                 if (!boatLngLat) return;
 
+                // NEW: update lastPosition and (optional) legacy global
+                lastPosition = { lng: boatLngLat[0], lat: boatLngLat[1] };
+                window.boatPosition = { longitude: boatLngLat[0], latitude: boatLngLat[1] };
+
                 const refLngLat = (Number.isFinite(refloc?.longitude) && Number.isFinite(refloc?.latitude))
                     ? [refloc.longitude, refloc.latitude]
                     : null;
 
-                // Optionally keep the map centered on the boat
                 if (config.followBoat()) {
                     map.easeTo({ center: boatLngLat, duration: 250 });
                 }
 
-                // Update path with a fixed maximum length
                 path.push(boatLngLat);
                 if (path.length > config.maxPathPoints) {
                     path.splice(0, path.length - config.maxPathPoints);
@@ -215,7 +186,6 @@
                     properties: {}
                 });
 
-                // Update reference line and marker
                 if (refLngLat) {
                     setData(map, IDS.refSource, {
                         type: 'Feature',
@@ -225,29 +195,21 @@
                     refMarker.setLngLat(refLngLat);
                 }
 
-                // Update dark mode circle
                 setData(map, IDS.darkSource, {
                     type: 'Feature',
                     geometry: { type: 'Point', coordinates: boatLngLat },
                     properties: {}
                 });
 
-                map.setLayoutProperty(
-                    IDS.darkLayer,
-                    'visibility',
-                    darkMode ? 'visible' : 'none'
-                );
+                map.setLayoutProperty(IDS.darkLayer, 'visibility', darkMode ? 'visible' : 'none');
 
-                // Update boat marker position
                 boatMarker.setLngLat(boatLngLat);
 
-                // Store course and apply corrected rotation (accounts for map bearing)
                 if (Number.isFinite(course)) {
                     lastCourse = course;
                     applyBoatRotation();
                 }
 
-                // Update popup content
                 boatPopup.setHTML(
                     `<b>Boat Location</b><br>
                      Latitude: ${loc.latitude}<br>
@@ -262,21 +224,18 @@
             }
         };
 
-        // Stop polling updates
         const stop = () => {
             stopped = true;
             if (timer) window.clearTimeout(timer);
             timer = null;
         };
 
-        // Start polling updates
         const start = () => {
             if (destroyed) return;
             stopped = false;
             tick();
         };
 
-        // Fully remove markers, layers, and sources
         const destroy = () => {
             if (destroyed) return;
             destroyed = true;
@@ -294,12 +253,14 @@
             if (map.getSource(IDS.pathSource)) map.removeSource(IDS.pathSource);
             if (map.getSource(IDS.refSource)) map.removeSource(IDS.refSource);
             if (map.getSource(IDS.darkSource)) map.removeSource(IDS.darkSource);
+
+            lastPosition = null;
         };
 
-        // Start immediately
         tick();
 
-        return { start, stop, destroy };
+        // NEW: return getPosition so other modules can use it
+        return { start, stop, destroy, getPosition };
     }
 
     window.initializeBoat = initializeBoat;
