@@ -17,6 +17,7 @@
         <script src='./js/style-fixer.js'></script>
         <script src='./js/utils.js'></script>
         <script src='./js/boat.js'></script>
+        <script src='./js/route.js'></script>
 
 
         <script>
@@ -46,6 +47,8 @@
 
                 map.on('load', () => {
                     initializeBoat(map);
+                    const route = window.initializeRoute(map);
+                    route.drawRoute();
                 });
             })();
         </script>
