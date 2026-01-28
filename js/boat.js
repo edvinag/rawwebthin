@@ -67,7 +67,7 @@
             targetIconUrl: "./assets/target.png",
             courseOffsetDeg: 0,
             darkCircleRadiusPx: 100,
-            followBoat: () => followboat,
+            followBoat: () => followBoat,
             maxPathPoints: 5000,
             ...options
         };

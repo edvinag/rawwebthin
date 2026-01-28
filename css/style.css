@@ -35,3 +35,7 @@ html, body {
     background-repeat: no-repeat;
     background-position: center;
 }
+
+.mapboxgl-ctrl-group button.active {
+    background-color: rgba(0, 0, 0, 0.1);
+}
