@@ -44,4 +44,4 @@ const autoUrl = getStoredOrParam('autoUrl');
 const autoApiKey = getStoredOrParam('autoApiKey');
 const mapboxAccessToken = getStoredOrParam('mapboxAccessToken');
 let autoRoute = getStoredBoolean('autoRoute', true);
-let followBoat = getStoredBoolean('followboat', false);
+let followBoat = getStoredBoolean('followBoat', false);

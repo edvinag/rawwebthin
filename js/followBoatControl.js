@@ -24,7 +24,8 @@ FollowBoatControl.prototype.onAdd = function (map) {
 
     button.onclick = () => {
         followBoat = !followBoat;
-        button.classList.toggle('active', followBoat);
+        setStoredBoolean('followBoat', followBoat);
+        button.classList.toggle('activeFollowBoat', followBoat);
     };
 
     container.appendChild(button);

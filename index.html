@@ -51,6 +51,32 @@
                     initializeBoat(map);
                     const route = window.initializeRoute(map);
                     route.drawRoute();
+
+                    const disableFollowBoat = () => {
+                        if (!followBoat) {
+                            return;
+                        }
+
+                        followBoat = false;
+                        setStoredBoolean('followBoat', false);
+
+                        const activeButton = document.querySelector(
+                            '.mapboxgl-ctrl-group button.activeFollowBoat'
+                        );
+
+                        if (activeButton) {
+                            activeButton.classList.remove('activeFollowBoat');
+                        }
+                    };
+
+                    map.on('dragstart', disableFollowBoat);
+                    map.on('rotatestart', disableFollowBoat);
+                    map.on('pitchstart', disableFollowBoat);
+                    map.on('zoomstart', (e) => {
+                        if (e && e.originalEvent) {
+                            disableFollowBoat();
+                        }
+                    });
                 });
             })();
         </script>
