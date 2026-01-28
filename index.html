@@ -1,31 +1,94 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>RawCat - Thin</title>
-    <link rel='stylesheet' href='https://unpkg.com/leaflet/dist/leaflet.css' />
-    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'>
-    <link rel='stylesheet' href='css/style.css' />
-</head>
-<body>
-    <div id='map'></div>
+<!doctype html>
+<html lang='en'>
+    <head>
+        <meta charset='utf-8' />
+        <meta name='viewport' content='width=device-width, initial-scale=1' />
+        <title>Skippo style - Mapbox GL JS</title>
 
-    <!-- Leaflet Library -->
-    <script src='https://unpkg.com/leaflet/dist/leaflet.js'></script>
+        <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+        <link href='./css/style.css' rel='stylesheet' />
+    </head>
+    <body>
+        <div id='map'></div>
 
-    <!-- Leaflet.VectorGrid (for MVT / PBF vector tiles) -->
-    <script src='https://unpkg.com/leaflet.vectorgrid/dist/Leaflet.VectorGrid.bundled.js'></script>
+        <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
 
-    <!-- Marker.Rotate.js Plugin -->
-    <script src='https://rawcdn.githack.com/shramov/leaflet-plugins/master/layer/Marker.Rotate.js'></script>
+        <!-- If you use Font Awesome classes in the popup, include it -->
+        <!-- <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css' /> -->
 
-    <!-- JS Files -->
-    <script src='js/config.js'></script>
-    <script src='js/utils.js'></script>
-    <script src='js/route.js'></script>
-    <script src='js/boat.js'></script>
-    <script src='js/popup.js'></script>
-    <script src='js/map.js'></script>
-</body>
+        <script src='./js/config.js'></script>
+        <script src='./js/followBoatControl.js'></script>
+        <script src='./js/style-fixer.js'></script>
+        <script src='./js/utils.js'></script>
+
+        <script src='./js/boat.js'></script>
+        <script src='./js/route.js'></script>
+        <script src='./js/popup.js'></script>
+
+        <script>
+            mapboxgl.accessToken = mapboxAccessToken;
+
+            const styleUrl = 'https://mapresources.skippo.cloud/20250829/style/hg_light.json';
+
+            (async () => {
+                const style = await loadAndFixStyle(styleUrl);
+
+                const map = new mapboxgl.Map({
+                    container: 'map',
+                    style,
+                    center: [11.89467333, 57.58759333],
+                    zoom: 14
+                });
+
+                map.addControl(
+                    new mapboxgl.NavigationControl({ visualizePitch: true }),
+                    'top-right'
+                );
+
+                map.addControl(new FollowBoatControl(), 'top-right');
+
+                map.addControl(
+                    new mapboxgl.ScaleControl({ maxWidth: 140, unit: 'metric' }),
+                    'bottom-left'
+                );
+
+                map.on('load', () => {
+                    initializeBoat(map);
+
+                    const route = window.initializeRoute(map);
+                    route.drawRoute();
+
+                    createPopup(map, route);
+
+                    map.doubleClickZoom.disable();
+
+                    const disableFollowBoat = () => {
+                        if (!followBoat) {
+                            return;
+                        }
+
+                        followBoat = false;
+                        setStoredBoolean('followBoat', false);
+
+                        const activeButton = document.querySelector(
+                            '.mapboxgl-ctrl-group button.activeFollowBoat'
+                        );
+
+                        if (activeButton) {
+                            activeButton.classList.remove('activeFollowBoat');
+                        }
+                    };
+
+                    map.on('dragstart', disableFollowBoat);
+                    map.on('rotatestart', disableFollowBoat);
+                    map.on('pitchstart', disableFollowBoat);
+                    map.on('zoomstart', (e) => {
+                        if (e && e.originalEvent) {
+                            disableFollowBoat();
+                        }
+                    });
+                });
+            })();
+        </script>
+    </body>
 </html>

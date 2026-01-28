@@ -1,97 +1,267 @@
-// boat.js - Handles Boat Positioning and Path Management
+(() => {
+    const IDS = {
+        pathSource: 'boat-path-source',
+        pathLayer: 'boat-path-layer',
+        refSource: 'boat-refline-source',
+        refLayer: 'boat-refline-layer',
+        darkSource: 'boat-darkcircle-source',
+        darkLayer: 'boat-darkcircle-layer'
+    };
 
-var boatPath = [];
-var boatPosition = null;
-var pathPolyline = null;
-var boatMarker = null;
-var refLine = null;  // Polyline for the line between the boat and reflocation
-var refLocationMarker = null; // Marker for the end of the refLine
-var darkMode = false; // Default dark mode state
-var boatDarkCircle = null;
+    const ensureSource = (map, id, data) => {
+        if (!map.getSource(id)) map.addSource(id, { type: 'geojson', data });
+    };
 
-var targetIcon = new L.Icon({
-    iconUrl: 'assets/target.png',
-    shadowUrl: null,
-    iconSize: new L.Point(30, 30)
-});
+    const ensureLayer = (map, layer) => {
+        if (!map.getLayer(layer.id)) map.addLayer(layer);
+    };
 
-async function initializeBoat(map) {
-    async function updateBoatPosition() {
-        const boatData = await fetchBoatData();
-        boatPosition = boatData.data.gps.location;
-        const { latitude, longitude } = boatData.data.gps.location;
-        const course = boatData.data.gps.course;
-        const reflocation = boatData.settings.controller.reflocation;
-        darkMode = boatData.settings.rudder.darkMode; // Update dark mode state
+    const setData = (map, id, data) => {
+        const src = map.getSource(id);
+        if (src && src.setData) src.setData(data);
+    };
 
-        updateGoalMarker(boatData.settings.route.goalIndex, map);
-        updateDarkModeControl();
-        if (map._loaded && followboat) {
-            map.setView([latitude, longitude]);
-        }
-        
-        boatPath.push([latitude, longitude]);
+    const markerEl = (className, imageUrl) => {
+        const root = document.createElement('div');
+        root.className = className;
 
-        if (pathPolyline) {
-            pathPolyline.setLatLngs(boatPath);
-        } else {
-            pathPolyline = L.polyline(boatPath, { color: 'green', weight: 3, opacity: 0.8 }).addTo(map);
-        }
+        const img = document.createElement('div');
+        img.className = `${className}__img`;
+        img.style.backgroundImage = `url('${imageUrl}')`;
+        img.style.backgroundRepeat = 'no-repeat';
+        img.style.backgroundPosition = 'center';
+        img.style.backgroundSize = 'contain';
 
-        if (boatMarker) {
-            boatMarker.setLatLng([latitude, longitude]);
-            boatMarker.setIconAngle(course);
-        } else {
-            boatMarker = L.marker([latitude, longitude], { icon: boatIcon }).addTo(map);
-            boatMarker.setIconAngle(course);
-            boatMarker.bindPopup(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude} <br>Course: ${course}`);
-        }
+        root.appendChild(img);
+        return { root, img };
+    };
 
-        // Draw or update the dotted line between boat and reflocation
-        const refLocationCoords = [reflocation.latitude, reflocation.longitude];
-        if (refLine) {
-            refLine.setLatLngs([[latitude, longitude], refLocationCoords]);
-        } else {
-            refLine = L.polyline([[latitude, longitude], refLocationCoords], {
-                color: 'red', weight: 4, opacity: 0.5, dashArray: '5, 5'
-            }).addTo(map);
-        }
+    function initializeBoat(map, options = {}) {
+        const config = {
+            intervalMs: 500,
+            boatIconUrl: './assets/boat.png',
+            targetIconUrl: './assets/target.png',
+            courseOffsetDeg: 0,
+            darkCircleRadiusPx: 100,
+            followBoat: () => followBoat,
+            maxPathPoints: 5000,
+            ...options
+        };
 
-        // Place or update the black point at the end of refLocationCoords and fill it
-        if (refLocationMarker) {
-            refLocationMarker.setLatLng(refLocationCoords);
-        } else {
-            refLocationMarker = L.marker(refLocationCoords, {
-                icon: targetIcon
-            }).addTo(map);
-        }
+        const path = [];
 
-        boatMarker.getPopup().setContent(`<b>Boat Location</b><br>Latitude: ${latitude}<br>Longitude: ${longitude}`);
+        ensureSource(map, IDS.pathSource, {
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: [] },
+            properties: {}
+        });
 
-        // Add or update a dark circle around the boat if dark mode is enabled
-        if (darkMode) {
-            const circleOptions = {
-                color: null,
-                fillColor: 'black',
-                fillOpacity: 0.4,
-                radius: 100, // Adjust radius as needed (in meters)
-                pane: 'shadowPane' // Renders below markers
-            };
-
-            if (boatDarkCircle) {
-                boatDarkCircle.setLatLng([latitude, longitude]);
-            } else {
-                boatDarkCircle = L.circle([latitude, longitude], circleOptions).addTo(map);
+        ensureLayer(map, {
+            id: IDS.pathLayer,
+            type: 'line',
+            source: IDS.pathSource,
+            paint: {
+                'line-width': 3,
+                'line-opacity': 0.8,
+                'line-color': '#00aa00'
             }
-        } else {
-            if (boatDarkCircle) {
-                map.removeLayer(boatDarkCircle);
-                boatDarkCircle = null;
-            }
-        }
+        });
 
+        ensureSource(map, IDS.refSource, {
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: [] },
+            properties: {}
+        });
+
+        ensureLayer(map, {
+            id: IDS.refLayer,
+            type: 'line',
+            source: IDS.refSource,
+            paint: {
+                'line-width': 4,
+                'line-opacity': 0.5,
+                'line-color': '#ff0000',
+                'line-dasharray': [2, 2]
+            }
+        });
+
+        ensureSource(map, IDS.darkSource, {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [0, 0] },
+            properties: {}
+        });
+
+        ensureLayer(map, {
+            id: IDS.darkLayer,
+            type: 'circle',
+            source: IDS.darkSource,
+            paint: {
+                'circle-radius': config.darkCircleRadiusPx,
+                'circle-color': '#000000',
+                'circle-opacity': 0.4
+            }
+        });
+
+        map.setLayoutProperty(IDS.darkLayer, 'visibility', 'none');
+
+        const boat = markerEl('boat-marker', config.boatIconUrl);
+        const boatPopup = new mapboxgl.Popup({ offset: 18, closeButton: false });
+
+        const boatMarker = new mapboxgl.Marker({ element: boat.root })
+            .setLngLat(map.getCenter().toArray())
+            .setPopup(boatPopup)
+            .addTo(map);
+
+        const ref = markerEl('ref-marker', config.targetIconUrl);
+        const c = map.getCenter();
+
+        const refMarker = new mapboxgl.Marker({ element: ref.root })
+            .setLngLat([c.lng + 0.01, c.lat + 0.01])
+            .addTo(map);
+
+        let lastCourse = null;
+
+        const applyBoatRotation = () => {
+            if (!Number.isFinite(lastCourse)) return;
+            const bearing = map.getBearing();
+            const angle = lastCourse + config.courseOffsetDeg - bearing;
+            boat.img.style.transform = `rotate(${angle}deg)`;
+        };
+
+        map.on('rotate', () => applyBoatRotation());
+
+        let timer = null;
+        let stopped = false;
+        let destroyed = false;
+        let inFlight = false;
+
+        // NEW: store latest position in a shared, safe format
+        let lastPosition = null;
+
+        const getPosition = () => lastPosition;
+
+        const schedule = () => {
+            if (destroyed || stopped) return;
+            timer = window.setTimeout(() => tick(), config.intervalMs);
+        };
+
+        const tick = async () => {
+            if (destroyed || stopped || inFlight) return schedule();
+            inFlight = true;
+
+            try {
+                const data = await fetchBoatData();
+
+                const loc = data?.data?.gps?.location;
+                const course = data?.data?.gps?.course;
+                const refloc = data?.settings?.controller?.reflocation;
+                const darkMode = Boolean(data?.settings?.rudder?.darkMode);
+
+                const boatLngLat = (Number.isFinite(loc?.longitude) && Number.isFinite(loc?.latitude))
+                    ? [loc.longitude, loc.latitude]
+                    : null;
+
+                if (!boatLngLat) return;
+
+                // NEW: update lastPosition and (optional) legacy global
+                lastPosition = { lng: boatLngLat[0], lat: boatLngLat[1] };
+                window.boatPosition = { longitude: boatLngLat[0], latitude: boatLngLat[1] };
+
+                const refLngLat = (Number.isFinite(refloc?.longitude) && Number.isFinite(refloc?.latitude))
+                    ? [refloc.longitude, refloc.latitude]
+                    : null;
+
+                if (config.followBoat()) {
+                    map.easeTo({ center: boatLngLat, duration: 250 });
+                }
+
+                path.push(boatLngLat);
+                if (path.length > config.maxPathPoints) {
+                    path.splice(0, path.length - config.maxPathPoints);
+                }
+
+                setData(map, IDS.pathSource, {
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: path },
+                    properties: {}
+                });
+
+                if (refLngLat) {
+                    setData(map, IDS.refSource, {
+                        type: 'Feature',
+                        geometry: { type: 'LineString', coordinates: [boatLngLat, refLngLat] },
+                        properties: {}
+                    });
+                    refMarker.setLngLat(refLngLat);
+                }
+
+                setData(map, IDS.darkSource, {
+                    type: 'Feature',
+                    geometry: { type: 'Point', coordinates: boatLngLat },
+                    properties: {}
+                });
+
+                map.setLayoutProperty(IDS.darkLayer, 'visibility', darkMode ? 'visible' : 'none');
+
+                boatMarker.setLngLat(boatLngLat);
+
+                if (Number.isFinite(course)) {
+                    lastCourse = course;
+                    applyBoatRotation();
+                }
+
+                boatPopup.setHTML(
+                    `<b>Boat Location</b><br>
+                     Latitude: ${loc.latitude}<br>
+                     Longitude: ${loc.longitude}<br>
+                     Course: ${course}`
+                );
+            } catch (err) {
+                console.error('Boat tick failed:', err);
+            } finally {
+                inFlight = false;
+                schedule();
+            }
+        };
+
+        const stop = () => {
+            stopped = true;
+            if (timer) window.clearTimeout(timer);
+            timer = null;
+        };
+
+        const start = () => {
+            if (destroyed) return;
+            stopped = false;
+            tick();
+        };
+
+        const destroy = () => {
+            if (destroyed) return;
+            destroyed = true;
+            stop();
+
+            map.off('rotate', applyBoatRotation);
+
+            boatMarker.remove();
+            refMarker.remove();
+
+            if (map.getLayer(IDS.pathLayer)) map.removeLayer(IDS.pathLayer);
+            if (map.getLayer(IDS.refLayer)) map.removeLayer(IDS.refLayer);
+            if (map.getLayer(IDS.darkLayer)) map.removeLayer(IDS.darkLayer);
+
+            if (map.getSource(IDS.pathSource)) map.removeSource(IDS.pathSource);
+            if (map.getSource(IDS.refSource)) map.removeSource(IDS.refSource);
+            if (map.getSource(IDS.darkSource)) map.removeSource(IDS.darkSource);
+
+            lastPosition = null;
+        };
+
+        tick();
+
+        // NEW: return getPosition so other modules can use it
+        return { start, stop, destroy, getPosition };
     }
 
-    await updateBoatPosition();
-    setInterval(updateBoatPosition, 500);
-}
+    window.initializeBoat = initializeBoat;
+})();
