@@ -1,12 +1,5 @@
 // config.js - Configuration and constants
 
-var boatIcon = L.icon({
-    iconUrl: 'assets/boat.png',
-    iconSize: new L.Point(19, 26),
-    iconAnchor: new L.Point(9, 13),
-    popupAnchor: [0, -15]
-});
-
 function getStoredOrParam(key) {
     const urlParams = new URLSearchParams(window.location.search);
     const paramValue = urlParams.get(key);
@@ -49,5 +42,6 @@ function setStoredDouble(key, value) {
 const apiUrl = getStoredOrParam('boatDataUrl');
 const autoUrl = getStoredOrParam('autoUrl');
 const autoApiKey = getStoredOrParam('autoApiKey');
+const mapboxAccessToken = getStoredOrParam('mapboxAccessToken');
 let autoRoute = getStoredBoolean('autoRoute', true);
 let followboat = getStoredBoolean('followboat', false);

@@ -13,13 +13,14 @@
 
         <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
         <script src='./credentials.js'></script>
+        <script src='./js/config.js'></script>
         <script src='./js/style-fixer.js'></script>
         <script src='./js/utils.js'></script>
         <script src='./js/boat.js'></script>
 
 
         <script>
-            mapboxgl.accessToken = window.MAPBOX_ACCESS_TOKEN;
+            mapboxgl.accessToken = mapboxAccessToken;
 
             const styleUrl = 'https://mapresources.skippo.cloud/20250829/style/hg_light.json';
 
