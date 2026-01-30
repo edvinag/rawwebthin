@@ -3,12 +3,11 @@
     <head>
         <meta charset='utf-8' />
         <meta name='viewport' content='width=device-width, initial-scale=1' />
-        <title>Skippo style - Mapbox GL JS</title>
+        <title>RawCat - Thin</title>
+        <link rel='icon' href='assets/boat.png'>
 
         <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
         <link href='./css/style.css' rel='stylesheet' />
-
-        <!-- Font Awesome (v4, matches fa fa-plus / fa fa-map-pin) -->
         <link
             rel='stylesheet'
             href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
@@ -17,13 +16,11 @@
     <body>
         <div id='map'></div>
 
-        <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+        <script src='https://api.mapbox.com/mapbox-gl-js/v3.18.1/mapbox-gl.js'></script>
 
         <script src='./js/config.js'></script>
         <script src='./js/followBoatControl.js'></script>
-        <script src='./js/style-fixer.js'></script>
         <script src='./js/utils.js'></script>
-
         <script src='./js/boat.js'></script>
         <script src='./js/route.js'></script>
         <script src='./js/popup.js'></script>
@@ -34,7 +31,9 @@
             const styleUrl = 'https://mapresources.skippo.cloud/20250829/style/hg_light.json';
 
             (async () => {
-                const style = await loadAndFixStyle(styleUrl);
+                const res = await fetch(styleUrl);
+                if (!res.ok) throw new Error(`Failed to load style: ${res.status}`);
+                const style = await res.json();
 
                 const map = new mapboxgl.Map({
                     container: 'map',
