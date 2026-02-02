@@ -45,3 +45,4 @@ const autoApiKey = getStoredOrParam('autoApiKey');
 const mapboxAccessToken = getStoredOrParam('mapboxAccessToken');
 let autoRoute = getStoredBoolean('autoRoute', true);
 let followBoat = getStoredBoolean('followBoat', false);
+let followHeading = getStoredBoolean('followHeading', false);
