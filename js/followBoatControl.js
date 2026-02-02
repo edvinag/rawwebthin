@@ -26,6 +26,16 @@ FollowBoatControl.prototype.onAdd = function (map) {
         followBoat = !followBoat;
         setStoredBoolean('followBoat', followBoat);
         button.classList.toggle('activeFollowBoat', followBoat);
+
+        if (!followBoat) {
+            followHeading = false;
+            setStoredBoolean('followHeading', followHeading);
+
+            const headingBtn = document.querySelector('.mapboxgl-ctrl-group button.activeFollowHeading');
+            if (headingBtn) {
+                headingBtn.classList.remove('activeFollowHeading');
+            }
+        }
     };
 
     container.appendChild(button);

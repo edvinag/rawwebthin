@@ -20,6 +20,7 @@
 
         <script src='./js/config.js'></script>
         <script src='./js/followBoatControl.js'></script>
+        <script src='./js/followBoatHeadingControl.js'></script>
         <script src='./js/utils.js'></script>
         <script src='./js/boat.js'></script>
         <script src='./js/route.js'></script>
@@ -47,7 +48,8 @@
                     'top-right'
                 );
 
-                map.addControl(new FollowBoatControl(), 'top-right');
+                map.addControl(new FollowBoatControl(), 'bottom-right');
+                map.addControl(new FollowBoatHeadingControl(),'bottom-right'); //disabled for thin version
 
                 map.addControl(
                     new mapboxgl.ScaleControl({ maxWidth: 140, unit: 'metric' }),
@@ -64,22 +66,27 @@
 
                     map.doubleClickZoom.disable();
 
-                    const disableFollowBoat = () => {
-                        if (!followBoat) {
-                            return;
-                        }
+                    const disableFollowBoat = (e) => {
+    const isUserAction = Boolean(e && e.originalEvent);
+    if (!isUserAction) {
+        return;
+    }
 
-                        followBoat = false;
-                        setStoredBoolean('followBoat', false);
+    followBoat = false;
+    followHeading = false;
+    setStoredBoolean('followBoat', false);
+    setStoredBoolean('followHeading', false);
 
-                        const activeButton = document.querySelector(
-                            '.mapboxgl-ctrl-group button.activeFollowBoat'
-                        );
+    const activeFollowBoatButton = document.querySelector('.mapboxgl-ctrl-group button.activeFollowBoat');
+    const activeHeadingButton = document.querySelector('.mapboxgl-ctrl-group button.activeFollowHeading');
 
-                        if (activeButton) {
-                            activeButton.classList.remove('activeFollowBoat');
-                        }
-                    };
+    if (activeFollowBoatButton) {
+        activeFollowBoatButton.classList.remove('activeFollowBoat');
+    }
+    if (activeHeadingButton) {
+        activeHeadingButton.classList.remove('activeFollowHeading');
+    }
+};
 
                     map.on('dragstart', disableFollowBoat);
                     map.on('rotatestart', disableFollowBoat);
