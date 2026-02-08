@@ -44,6 +44,7 @@
             courseOffsetDeg: 0,
             darkCircleRadiusPx: 100,
             followBoat: () => followBoat,
+            followHeading: () => followHeading,
             maxPathPoints: 5000,
             ...options
         };
@@ -123,6 +124,12 @@
 
         const applyBoatRotation = () => {
             if (!Number.isFinite(lastCourse)) return;
+
+            if (config.followHeading()) {
+                boat.img.style.transform = 'rotate(0deg)';
+                return;
+            }
+
             const bearing = map.getBearing();
             const angle = lastCourse + config.courseOffsetDeg - bearing;
             boat.img.style.transform = `rotate(${angle}deg)`;
@@ -135,7 +142,6 @@
         let destroyed = false;
         let inFlight = false;
 
-        // NEW: store latest position in a shared, safe format
         let lastPosition = null;
 
         const getPosition = () => lastPosition;
@@ -163,7 +169,6 @@
 
                 if (!boatLngLat) return;
 
-                // NEW: update lastPosition and (optional) legacy global
                 lastPosition = { lng: boatLngLat[0], lat: boatLngLat[1] };
                 window.boatPosition = { longitude: boatLngLat[0], latitude: boatLngLat[1] };
 
@@ -171,8 +176,17 @@
                     ? [refloc.longitude, refloc.latitude]
                     : null;
 
-                if (config.followBoat()) {
-                    map.easeTo({ center: boatLngLat, duration: 250 });
+                if (Number.isFinite(course)) lastCourse = course;
+
+                const shouldFollowHeading = config.followHeading() && Number.isFinite(lastCourse);
+                const shouldFollowCenter = config.followBoat() || shouldFollowHeading;
+
+                if (shouldFollowCenter || shouldFollowHeading) {
+                    map.easeTo({
+                        center: shouldFollowCenter ? boatLngLat : map.getCenter().toArray(),
+                        bearing: shouldFollowHeading ? lastCourse + config.courseOffsetDeg : map.getBearing(),
+                        duration: 250
+                    });
                 }
 
                 path.push(boatLngLat);
@@ -205,10 +219,7 @@
 
                 boatMarker.setLngLat(boatLngLat);
 
-                if (Number.isFinite(course)) {
-                    lastCourse = course;
-                    applyBoatRotation();
-                }
+                applyBoatRotation();
 
                 boatPopup.setHTML(
                     `<b>Boat Location</b><br>
@@ -259,7 +270,6 @@
 
         tick();
 
-        // NEW: return getPosition so other modules can use it
         return { start, stop, destroy, getPosition };
     }
 
