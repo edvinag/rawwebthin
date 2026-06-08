@@ -41,7 +41,6 @@ function setStoredDouble(key, value) {
 
 const apiUrl = getStoredOrParam('boatDataUrl');
 const autoUrl = getStoredOrParam('autoUrl');
-const autoApiKey = getStoredOrParam('autoApiKey');
 const mapboxAccessToken = getStoredOrParam('mapboxAccessToken');
 let autoRoute = getStoredBoolean('autoRoute', true);
 let followBoat = getStoredBoolean('followBoat', false);

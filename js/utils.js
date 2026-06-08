@@ -59,8 +59,6 @@ async function toggleDarkMode(currentMode) {
 }
 
 async function fetchAutoRoute(start, end) {
-    const api_url = "https://nautical-hub.skippo.io/aws/autoroute";
-    const auth_header = `Basic ${autoApiKey}`;
     const course = `${start.lng},${start.lat};${end.lng},${end.lat}`;
 
     const params = new URLSearchParams({
@@ -72,9 +70,8 @@ async function fetchAutoRoute(start, end) {
     });
 
     try {
-      const response = await fetch(`${api_url}?${params.toString()}`, {
+      const response = await fetch(`${autoUrl}?${params.toString()}`, {
         method: 'GET',
-        headers: { "Authorization": auth_header }
       });
 
       if (!response.ok) {
